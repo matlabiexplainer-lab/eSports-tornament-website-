@@ -3,7 +3,7 @@ const SHEET_ID = '1bHcmgOmFT3z9dtWskTr3PI0cpdorwDEVdDfAYLSonBo';
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
 // TODO: Yahan apna asli WhatsApp number dalein (Prefix '91' for India, bina '+' ke)
-const ADMIN_WHATSAPP = '6206792655'; 
+const ADMIN_WHATSAPP = '916206792655'; 
 
 // Real-Time Leaderboard Fetch Logic
 async function fetchLeaderboard() {
