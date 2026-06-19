@@ -1,6 +1,9 @@
-// Google Sheet Configuration (Aapki Real ID Embedded Hai)
+// Google Sheet Configuration
 const SHEET_ID = '1bHcmgOmFT3z9dtWskTr3PI0cpdorwDEVdDfAYLSonBo'; 
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+
+// TODO: Yahan apna asli WhatsApp number dalein (Prefix '91' for India, bina '+' ke)
+const ADMIN_WHATSAPP = 'YOUR_PERSONAL_WHATSAPP_NUMBER_HERE'; 
 
 // Real-Time Leaderboard Fetch Logic
 async function fetchLeaderboard() {
@@ -8,19 +11,15 @@ async function fetchLeaderboard() {
         const response = await fetch(SHEET_URL);
         const data = await response.text();
         
-        const rows = data.split('\n').slice(1); // Header row (Rank, Player Name...) ko skip kiya
+        const rows = data.split('\n').slice(1);
         const tbody = document.getElementById('leaderboardData');
-        tbody.innerHTML = ''; // Loading text hatane ke liye
+        tbody.innerHTML = ''; 
 
         rows.forEach(row => {
-            // CSV data ko columns me todne ke liye regex logic
             const columns = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(col => col.replace(/^"|"$/g, '').trim());
             
-            // Check ki row khali na ho aur kam se kam 6 columns ho
             if (columns.length >= 6 && columns[0] !== "") {
                 const tr = document.createElement('tr');
-                
-                // Rank 1 ke player name ko special glow/color dene ke liye style class
                 const isRankOne = columns[0] === '1' ? 'class="highlight-team"' : '';
 
                 tr.innerHTML = `
@@ -36,14 +35,13 @@ async function fetchLeaderboard() {
         });
     } catch (error) {
         console.error("Leaderboard load karne me dikkat aai:", error);
-        document.getElementById('leaderboardData').innerHTML = `<tr><td colspan="6" style="color: #ff4655;">Failed to load live scores. Check internet or Sheet Share access.</td></tr>`;
+        document.getElementById('leaderboardData').innerHTML = `<tr><td colspan="6" style="color: #ff4655;">Failed to load live scores.</td></tr>`;
     }
 }
 
-// Jaise hi website open hogi, automatic background me sheet ka data load ho jayega
 window.addEventListener('DOMContentLoaded', fetchLeaderboard);
 
-// Registration Form Logic
+// Registration Form Logic via WhatsApp Direct Redirect
 document.getElementById('registrationForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -52,21 +50,22 @@ document.getElementById('registrationForm').addEventListener('submit', function(
     const gameId = document.getElementById('gameId').value;
     const whatsapp = document.getElementById('whatsapp').value;
 
-    const squadDetails = {
-        name: teamName,
-        leader: leaderName,
-        uid: gameId,
-        phone: whatsapp,
-        registrationDate: new Date().toLocaleDateString()
-    };
-
-    // Browser ke local storage me data backup rakhne ke liye
-    let registeredTeams = JSON.parse(localStorage.getItem('esportsTeams')) || [];
-    registeredTeams.push(squadDetails);
-    localStorage.setItem('esportsTeams', JSON.stringify(registeredTeams));
+    // WhatsApp Message Format Tyar karna
+    const message = `*🔥 NEW REGISTRATION - SK ESPORTS *%0A%0A` +
+                    `• *Team/Player Name:* ${encodeURIComponent(teamName)}%0A` +
+                    `• *IGL Name:* ${encodeURIComponent(leaderName)}%0A` +
+                    `• *Character UID:* ${encodeURIComponent(gameId)}%0A` +
+                    `• *WhatsApp:* ${encodeURIComponent(whatsapp)}%0A%0A` +
+                    `Kindly approve our squad slot! 🏆`;
 
     document.getElementById('successMessage').classList.remove('hidden');
-    document.getElementById('registrationForm').reset();
 
-    alert(`🎉 Registration Successful!\nPlayer/Team: ${teamName}`);
+    // Official WhatsApp API link banana aur new tab me open karna
+    const whatsappURL = `https://api.whatsapp.com/send?phone=${ADMIN_WHATSAPP}&text=${message}`;
+    
+    setTimeout(() => {
+        window.open(whatsappURL, '_blank');
+        document.getElementById('registrationForm').reset();
+        document.getElementById('successMessage').classList.add('hidden');
+    }, 1000);
 });
