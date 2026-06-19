@@ -16,17 +16,30 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 8%;
+    padding: 10px 8%;
     background-color: #1f2833;
     position: sticky;
     top: 0;
     z-index: 100;
 }
 
-.logo {
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-logo {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+}
+
+.logo-text {
     font-size: 24px;
     font-weight: bold;
     color: #66fcf1; /* Neon Cyan */
+    letter-spacing: 1px;
 }
 
 nav a {
@@ -48,20 +61,27 @@ nav a:hover {
 }
 
 .hero {
-    height: 70vh;
+    height: 80vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    background: linear-gradient(rgba(11, 12, 16, 0.8), rgba(11, 12, 16, 0.9)), url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200') no-repeat center center/cover;
+    background: linear-gradient(rgba(11, 12, 16, 0.85), rgba(11, 12, 16, 0.95)), url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200') no-repeat center center/cover;
     padding: 0 20px;
 }
 
-.hero h1 {
-    font-size: 42px;
-    color: #fff;
+.hero-logo {
+    height: 150px;
+    width: auto;
     margin-bottom: 20px;
+    filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.5));
+}
+
+.hero h1 {
+    font-size: 38px;
+    color: #fff;
+    margin-bottom: 15px;
     letter-spacing: 2px;
 }
 
@@ -102,7 +122,6 @@ h2 {
     margin-bottom: 40px;
 }
 
-/* Table Responsive Container */
 .table-responsive {
     overflow-x: auto;
     margin-top: 20px;
