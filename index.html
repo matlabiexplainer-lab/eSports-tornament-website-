@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Esports Tournament Arena</title>
+    <title>SK eSports Tournament</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header>
-        <div class="logo">🏆 PATNA ESPORTS</div>
+        <div class="logo">🏆 SK ESPORTS</div>
         <nav>
             <a href="#home">Home</a>
             <a href="#leaderboard">Leaderboard</a>
@@ -24,53 +24,34 @@
     </section>
 
     <section id="leaderboard" class="section-container">
-        <h2>Live Points Table</h2>
-        <table class="points-table">
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Team Name</th>
-                    <th>Matches</th>
-                    <th>WWCD</th>
-                    <th>Finish Points</th>
-                    <th>Total Points</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1</td>
-                    <td class="highlight-team">Patna Warriors</td>
-                    <td>3</td>
-                    <td>2</td>
-                    <td>28</td>
-                    <td>68</td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>Boring Road Esports</td>
-                    <td>3</td>
-                    <td>1</td>
-                    <td>20</td>
-                    <td>45</td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>Magadh Killers</td>
-                    <td>3</td>
-                    <td>0</td>
-                    <td>15</td>
-                    <td>30</td>
-                </tr>
-            </tbody>
-        </table>
+        <h2>Live Leaderboard</h2>
+        <div class="table-responsive">
+            <table class="points-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player Name</th>
+                        <th>Matches</th>
+                        <th>Kill</th>
+                        <th>Win</th>
+                        <th>Total Points</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardData">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 20px;">Loading Live Leaderboard...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <section id="register" class="section-container bg-dark">
         <h2>Squad Registration Form</h2>
         <form id="registrationForm" class="reg-form">
             <div class="form-group">
-                <label for="teamName">Team Name:</label>
-                <input type="text" id="teamName" placeholder="Enter your Team Name" required>
+                <label for="teamName">Team/Player Name:</label>
+                <input type="text" id="teamName" placeholder="Enter Team or Player Name" required>
             </div>
             <div class="form-group">
                 <label for="leaderName">In-Game Leader (IGL) Name:</label>
@@ -86,11 +67,11 @@
             </div>
             <button type="submit" class="submit-btn">Submit Registration</button>
         </form>
-        <div id="successMessage" class="hidden">🎉 Registration Successful! Your squad is locked in.</div>
+        <div id="successMessage" class="hidden">🎉 Registration Successful! Locked in.</div>
     </section>
 
     <footer>
-        <p>&copy; 2026 Patna Esports League. All Rights Reserved.</p>
+        <p>&copy; 2026 SK eSports League. All Rights Reserved.</p>
     </footer>
 
     <script src="script.js"></script>
