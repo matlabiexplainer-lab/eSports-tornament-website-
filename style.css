@@ -12,7 +12,6 @@ body {
     scroll-behavior: smooth;
 }
 
-/* Header/Nav */
 header {
     display: flex;
     justify-content: space-between;
@@ -43,12 +42,11 @@ nav a:hover {
 }
 
 .btn {
-    background-color: #ff4655; /* Gaming Red */
+    background-color: #ff4655;
     padding: 8px 16px;
     border-radius: 4px;
 }
 
-/* Hero Section */
 .hero {
     height: 70vh;
     display: flex;
@@ -61,7 +59,7 @@ nav a:hover {
 }
 
 .hero h1 {
-    font-size: 45px;
+    font-size: 42px;
     color: #fff;
     margin-bottom: 20px;
     letter-spacing: 2px;
@@ -89,9 +87,8 @@ nav a:hover {
     transform: scale(1.05);
 }
 
-/* Sections */
 .section-container {
-    padding: 60px 10%;
+    padding: 60px 8%;
     text-align: center;
 }
 
@@ -103,17 +100,20 @@ h2 {
     font-size: 32px;
     color: #fff;
     margin-bottom: 40px;
-    position: relative;
 }
 
-/* Points Table */
+/* Table Responsive Container */
+.table-responsive {
+    overflow-x: auto;
+    margin-top: 20px;
+    border-radius: 8px;
+}
+
 .points-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
     background-color: #1f2833;
-    border-radius: 8px;
-    overflow: hidden;
+    min-width: 600px;
 }
 
 .points-table th, .points-table td {
@@ -132,7 +132,6 @@ h2 {
     font-weight: bold;
 }
 
-/* Registration Form */
 .reg-form {
     max-width: 500px;
     margin: 0 auto;
@@ -172,11 +171,6 @@ h2 {
     font-weight: bold;
     cursor: pointer;
     border-radius: 4px;
-    transition: 0.3s;
-}
-
-.submit-btn:hover {
-    background: #e03e4b;
 }
 
 #successMessage {
@@ -194,6 +188,4 @@ footer {
     padding: 20px;
     background-color: #0b0c10;
     border-top: 1px solid #1f2833;
-    font-size: 14px;
 }
-
