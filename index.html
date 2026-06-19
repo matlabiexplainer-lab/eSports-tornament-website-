@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esports Tournament Arena</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">🏆 PATNA ESPORTS</div>
+        <nav>
+            <a href="#home">Home</a>
+            <a href="#leaderboard">Leaderboard</a>
+            <a href="#register" class="btn">Register Now</a>
+        </nav>
+    </header>
+
+    <section id="home" class="hero">
+        <h1>BATTLEGROUNDS CHAMPIONSHIP 2026</h1>
+        <p>Register your squad, dominate the lobby, and win the ultimate prize pool!</p>
+        <a href="#register" class="cta-btn">Join Tournament</a>
+    </section>
+
+    <section id="leaderboard" class="section-container">
+        <h2>Live Points Table</h2>
+        <table class="points-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Team Name</th>
+                    <th>Matches</th>
+                    <th>WWCD</th>
+                    <th>Finish Points</th>
+                    <th>Total Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td class="highlight-team">Patna Warriors</td>
+                    <td>3</td>
+                    <td>2</td>
+                    <td>28</td>
+                    <td>68</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Boring Road Esports</td>
+                    <td>3</td>
+                    <td>1</td>
+                    <td>20</td>
+                    <td>45</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Magadh Killers</td>
+                    <td>3</td>
+                    <td>0</td>
+                    <td>15</td>
+                    <td>30</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="register" class="section-container bg-dark">
+        <h2>Squad Registration Form</h2>
+        <form id="registrationForm" class="reg-form">
+            <div class="form-group">
+                <label for="teamName">Team Name:</label>
+                <input type="text" id="teamName" placeholder="Enter your Team Name" required>
+            </div>
+            <div class="form-group">
+                <label for="leaderName">In-Game Leader (IGL) Name:</label>
+                <input type="text" id="leaderName" placeholder="IGL Name" required>
+            </div>
+            <div class="form-group">
+                <label for="gameId">IGL Character UID:</label>
+                <input type="text" id="gameId" placeholder="e.g. 512345678" required>
+            </div>
+            <div class="form-group">
+                <label for="whatsapp">WhatsApp Number:</label>
+                <input type="tel" id="whatsapp" placeholder="For Match ID & Password" required>
+            </div>
+            <button type="submit" class="submit-btn">Submit Registration</button>
+        </form>
+        <div id="successMessage" class="hidden">🎉 Registration Successful! Your squad is locked in.</div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Patna Esports League. All Rights Reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
