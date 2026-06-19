@@ -1,6 +1,5 @@
-// Google Form Configuration (Aapki Real IDs Embedded Hain)
+// Google Form Configuration
 const FORM_ID = '1FAIpQLSc1PwlapdeInrpvskjMK0xi2f9QhGPQOkVXZ6uT6yF0uwYTWQ'; 
-const FORM_URL = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
 const ENTRY_ID = 'entry.72166992'; 
 
 // Live Leaderboard Fetch Logic (From Google Sheet)
@@ -60,7 +59,7 @@ function openRegistrationFlow(tTitle, tFee) {
     showSection('registration-flow');
 }
 
-// Submitting data directly using robust URLencoded string format
+// Submitting data using hidden HTML form submission to bypass CORS blocks completely
 document.getElementById('megaForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -74,26 +73,43 @@ document.getElementById('megaForm').addEventListener('submit', function(e) {
     const uid = document.getElementById('pUid').value;
     const phone = document.getElementById('pPhone').value;
 
-    // Saare data ko ek single text line me design karna
     const combinedData = `Game: ${game} | Tournament: ${tournament} | Player: ${name} | UID: ${uid} | Phone: ${phone}`;
 
-    // Bulletproof Submission: Gunshot method for Google Forms via URL encoding string
-    const targetURL = `${FORM_URL}?${ENTRY_ID}=${encodeURIComponent(combinedData)}`;
+    // Ek temporary hidden form banana jo browser background me submit karega
+    const hiddenForm = document.createElement('form');
+    hiddenForm.method = 'POST';
+    hiddenForm.action = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
+    hiddenForm.target = 'hidden_iframe'; // Isse page redirect nahi hoga
 
-    // fetch with no-cors to silently hit Google Form server
-    fetch(targetURL, {
-        method: 'POST',
-        mode: 'no-cors'
-    }).then(() => {
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = ENTRY_ID;
+    hiddenInput.value = combinedData;
+
+    hiddenForm.appendChild(hiddenInput);
+    document.body.appendChild(hiddenForm);
+
+    // Iframe banana takki user ko lagatar website hi dikhe
+    let iframe = document.getElementById('hidden_iframe');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.name = 'hidden_iframe';
+        iframe.id = 'hidden_iframe';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+
+    // Form submit karna
+    hiddenForm.submit();
+
+    // Cleanup aur success screen dikhana
+    setTimeout(() => {
+        document.body.removeChild(hiddenForm);
         showSection('success-screen');
         document.getElementById('megaForm').reset();
-    }).catch((err) => {
-        console.error("Database Error:", err);
-        alert("Network slow hai. Dobara try karein.");
-    }).finally(() => {
         btn.innerText = "Complete Registration & Pay";
         btn.disabled = false;
-    });
+    }, 1500);
 });
 
 // Live Leaderboard Loader logic
