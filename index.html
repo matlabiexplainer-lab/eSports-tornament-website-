@@ -8,6 +8,7 @@
 </head>
 <body>
 
+    <!-- Navigation Bar -->
     <header>
         <div class="logo-container">
             <img src="logo.png" alt="SK eSports Logo" class="nav-logo">
@@ -20,13 +21,15 @@
         </nav>
     </header>
 
+    <!-- Hero Banner -->
     <section id="home" class="hero">
         <img src="logo.png" alt="SK eSports Big Logo" class="hero-logo">
         <h1>BATTLEGROUNDS CHAMPIONSHIP 2026</h1>
-        <p>Register your squad, dominate the lobby, and win the ultimate prize pool!</p>
+        <p>Register, dominate the lobby, and win the ultimate prize pool!</p>
         <a href="#register" class="cta-btn">Join Tournament</a>
     </section>
 
+    <!-- Leaderboard / Points Table Section -->
     <section id="leaderboard" class="section-container">
         <h2>Live Leaderboard</h2>
         <div class="table-responsive">
@@ -50,25 +53,39 @@
         </div>
     </section>
 
+    <!-- Registration Form Section -->
     <section id="register" class="section-container bg-dark">
         <h2>Squad Registration Form</h2>
         <form id="registrationForm" class="reg-form">
+            
+            <!-- 1st Column: Select Game -->
             <div class="form-group">
-                <label for="teamName">Team/Player Name:</label>
-                <input type="text" id="teamName" placeholder="Enter Team or Player Name" required>
+                <label for="selectGame">Select Game:</label>
+                <select id="selectGame" required style="width: 100%; padding: 10px; background: #1f2833; border: 1px solid #45f3ff; color: #fff; border-radius: 4px;">
+                    <option value="" disabled selected>Choose Game</option>
+                    <option value="Free Fire MAX">Free Fire MAX</option>
+                    <option value="BGMI">BGMI</option>
+                </select>
             </div>
+
+            <!-- 2nd Column: Player Name -->
             <div class="form-group">
-                <label for="leaderName">In-Game Leader (IGL) Name:</label>
-                <input type="text" id="leaderName" placeholder="IGL Name" required>
+                <label for="playerName">Player Name:</label>
+                <input type="text" id="playerName" placeholder="Enter Player Name" required>
             </div>
+
+            <!-- 3rd Column: Character UID -->
             <div class="form-group">
-                <label for="gameId">IGL Character UID:</label>
+                <label for="gameId">Character UID:</label>
                 <input type="text" id="gameId" placeholder="e.g. 512345678" required>
             </div>
+
+            <!-- 4th Column: WhatsApp Number -->
             <div class="form-group">
                 <label for="whatsapp">WhatsApp Number:</label>
                 <input type="tel" id="whatsapp" placeholder="For Match ID & Password" required>
             </div>
+
             <button type="submit" class="submit-btn">Submit via WhatsApp</button>
         </form>
         <div id="successMessage" class="hidden">🎉 Preparing your registration data...</div>
