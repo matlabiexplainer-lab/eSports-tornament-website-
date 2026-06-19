@@ -60,8 +60,8 @@ function openRegistrationFlow(tTitle, tFee) {
     showSection('registration-flow');
 }
 
-// Submitting data silently to Google Form
-document.getElementById('megaForm').addEventListener('submit', async function(e) {
+// Submitting data directly using robust URLencoded string format
+document.getElementById('megaForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const btn = document.getElementById('submitFlowBtn');
@@ -77,27 +77,23 @@ document.getElementById('megaForm').addEventListener('submit', async function(e)
     // Saare data ko ek single text line me design karna
     const combinedData = `Game: ${game} | Tournament: ${tournament} | Player: ${name} | UID: ${uid} | Phone: ${phone}`;
 
-    // Google Form data post ready karna
-    const formData = new URLSearchParams();
-    formData.append(ENTRY_ID, combinedData);
+    // Bulletproof Submission: Gunshot method for Google Forms via URL encoding string
+    const targetURL = `${FORM_URL}?${ENTRY_ID}=${encodeURIComponent(combinedData)}`;
 
-    try {
-        await fetch(FORM_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formData
-        });
-
+    // fetch with no-cors to silently hit Google Form server
+    fetch(targetURL, {
+        method: 'POST',
+        mode: 'no-cors'
+    }).then(() => {
         showSection('success-screen');
         document.getElementById('megaForm').reset();
-    } catch (err) {
+    }).catch((err) => {
         console.error("Database Error:", err);
-        alert("Server network busy. Try again.");
-    } finally {
+        alert("Network slow hai. Dobara try karein.");
+    }).finally(() => {
         btn.innerText = "Complete Registration & Pay";
         btn.disabled = false;
-    }
+    });
 });
 
 // Live Leaderboard Loader logic
