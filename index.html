@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SK eSports Tournament</title>
+    <title>SK eSports Platform</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,78 +14,82 @@
             <span class="logo-text">SK ESPORTS</span>
         </div>
         <nav>
-            <a href="#home">Home</a>
+            <a href="#" onclick="showSection('game-selection')">Home</a>
             <a href="#leaderboard">Leaderboard</a>
-            <a href="#register" class="btn">Register Now</a>
         </nav>
     </header>
 
-    <section id="home" class="hero">
-        <img src="Logo.png" alt="SK eSports Big Logo" class="hero-logo">
-        <h1>BATTLEGROUNDS CHAMPIONSHIP 2026</h1>
-        <p>Register, dominate the lobby, and win the ultimate prize pool!</p>
-        <a href="#register" class="cta-btn">Join Tournament</a>
-    </section>
+    <main class="container">
 
-    <section id="leaderboard" class="section-container">
-        <h2>Live Leaderboard</h2>
-        <div class="table-responsive">
-            <table class="points-table">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Player Name</th>
-                        <th>Matches</th>
-                        <th>Kill</th>
-                        <th>Win</th>
-                        <th>Total Points</th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboardData">
-                    <tr>
-                        <td colspan="6" style="text-align: center; padding: 20px;">Loading Live Leaderboard...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
+        <section id="game-selection" class="interface-section active">
+            <h1 class="main-title">SELECT YOUR GAME</h1>
+            <p class="subtitle">Choose a game to view live tournaments</p>
+            <div class="game-grid">
+                <div class="game-card ff-card" onclick="selectGame('Free Fire MAX')">
+                    <div class="game-overlay"></div>
+                    <h2>FREE FIRE MAX</h2>
+                </div>
+                <div class="game-card bgmi-card" onclick="selectGame('BGMI')">
+                    <div class="game-overlay"></div>
+                    <h2>BGMI</h2>
+                </div>
+            </div>
+        </section>
 
-    <section id="register" class="section-container bg-dark">
-        <h2>Squad Registration Form</h2>
-        <form id="registrationForm" class="reg-form">
+        <section id="tournament-view" class="interface-section">
+            <button class="back-btn" onclick="showSection('game-selection')">← Back to Games</button>
+            <h2 id="selected-game-title" class="section-title">Tournaments</h2>
             
-            <div class="form-group">
-                <label for="selectGame">Select Game:</label>
-                <select id="selectGame" required style="width: 100%; padding: 10px; background: #1f2833; border: 1px solid #45f3ff; color: #fff; border-radius: 4px;">
-                    <option value="" disabled selected>Choose Game</option>
-                    <option value="Free Fire MAX">Free Fire MAX</option>
-                    <option value="BGMI">BGMI</option>
-                </select>
+            <div class="tournament-list" id="tournaments-container">
+                </div>
+        </section>
+
+        <section id="registration-flow" class="interface-section">
+            <button class="back-btn" onclick="showSection('tournament-view')">← Back to Tournaments</button>
+            <h2 class="section-title">Tournament Registration</h2>
+            
+            <div class="flow-container">
+                <form id="megaForm" class="reg-form">
+                    <div class="form-group">
+                        <label>Player In-Game Name:</label>
+                        <input type="text" id="pName" required placeholder="Enter exact IGN">
+                    </div>
+                    <div class="form-group">
+                        <label>Character UID:</label>
+                        <input type="text" id="pUid" required placeholder="e.g. 512345678">
+                    </div>
+                    <div class="form-group">
+                        <label>WhatsApp Number:</label>
+                        <input type="tel" id="pPhone" required placeholder="For Room ID/Pass">
+                    </div>
+
+                    <div class="payment-box">
+                        <h3>💳 Entry Fee Payment</h3>
+                        <p class="fee-text">Amount to Pay: <span id="flow-fee">₹0</span></p>
+                        <div class="qr-placeholder">
+                            <p style="color: #66fcf1; font-weight: bold; margin-bottom: 10px;">SCAN TO PAY</p>
+                            <p style="font-size: 14px; color: #aaa;">UPI ID: skesports@ybl</p>
+                        </div>
+                        <p class="payment-instruction">Kindly pay the entry fee via UPI to the ID above, then click submit below.</p>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitFlowBtn">Complete Registration & Pay</button>
+                </form>
             </div>
+        </section>
 
-            <div class="form-group">
-                <label for="playerName">Player Name:</label>
-                <input type="text" id="playerName" placeholder="Enter Player Name" required>
+        <section id="success-screen" class="interface-section success-container">
+            <div class="success-card">
+                <div class="success-icon">🏆</div>
+                <h1>REGISTRATION COMPLETE</h1>
+                <p>Aapka registration successfully humare secure dashboard me record ho gaya hai.</p>
+                <div class="status-badge">Status: Awaiting Payment Verification</div>
+                <p class="note">Match Room ID aur Password aapke diye gaye WhatsApp number par match shuru hone se 15 minute pehle bhej diya jayega.</p>
+                <button class="cta-btn" onclick="showSection('game-selection')">Go To Dashboard</button>
             </div>
+        </section>
 
-            <div class="form-group">
-                <label for="gameId">Character UID:</label>
-                <input type="text" id="gameId" placeholder="e.g. 512345678" required>
-            </div>
-
-            <div class="form-group">
-                <label for="whatsapp">WhatsApp Number:</label>
-                <input type="tel" id="whatsapp" placeholder="For Match ID & Password" required>
-            </div>
-
-            <button type="submit" class="submit-btn">Submit via WhatsApp</button>
-        </form>
-        <div id="successMessage" class="hidden">🎉 Preparing your registration data...</div>
-    </section>
-
-    <footer>
-        <p>&copy; 2026 SK eSports League. All Rights Reserved.</p>
-    </footer>
+    </main>
 
     <script src="script.js"></script>
 </body>
