@@ -154,7 +154,7 @@ function renderMatchesList() {
                     <p style="margin:3px 0; font-size:13px;">Password: <span id="roomPassVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
                 </div>
 
-                <!-- FIXED: ALL PLAYER LEADERBOARD (ONLY NAME, KILLS, PRIZE) -->
+                <!-- ALL PLAYER LEADERBOARD (ONLY NAME, KILLS, PRIZE) -->
                 <div id="result-box-${uniqueMatchKey}" class="hidden" style="background:#111a24; padding:12px; border-radius:6px; margin-top:10px; border:1px solid #2ecc71; color:#fff; text-align:left;">
                     <h4 style="margin:0 0 8px 0; color:#2ecc71; font-size:14px;">🏆 Full Match Leaderboard / Results:</h4>
                     <div style="overflow-x:auto;">
@@ -208,8 +208,7 @@ function renderMatchesList() {
                 return;
             }
 
-            const counterEl = document.getElementById:// count_...
-            `count_${uniqueMatchKey}`;
+            const counterEl = document.getElementById(`count_${uniqueMatchKey}`);
             if(counterEl) counterEl.innerText = `👥 Joined: ${joinedCount}/${t.maxSlots}`;
 
             // --- 15 MIN ROOM TIMING ENGINE ---
