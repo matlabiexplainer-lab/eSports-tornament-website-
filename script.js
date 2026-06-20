@@ -1,4 +1,4 @@
-// Google Firebase Premium Configuration (Gaurav's Live Keys Connected)
+// Google Firebase Project Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyB-C7Ks_lXWWf1RMKUQ8cPuhov5y7ZveXM",
     authDomain: "sk-esports-90bf9.firebaseapp.com",
@@ -9,50 +9,69 @@ const firebaseConfig = {
     measurementId: "G-KW6J0GE4TF"
 };
 
-// Initialize Firebase App & Database using Compatibility Layer
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const auth = firebase.auth();
 const db = firebase.firestore();
-
-// Formspree Backup Database Endpoint URL
 const FORMSPREE_URL = 'https://formspree.io/f/xnjyelpq'; 
 
-// Live Static Tournament Structure
-const TOURNAMENT_DATA = {
-    "Free Fire MAX": [
-        { id: "ff_t1", title: "FFMAX Solo Clash Squad", fee: 20, prize: "₹500", slots: "12/48 Left" },
-        { id: "ff_t2", title: "SK Free Fire Daily Cup", fee: 50, prize: "₹1500", slots: "30/100 Left" }
-    ],
-    "BGMI": [
-        { id: "bgmi_t1", title: "BGMI Erangel Ultimate Crux", fee: 30, prize: "₹1000", slots: "22/100 Left" },
-        { id: "bgmi_t2", title: "SK BGMI Sunday Grand Arena", fee: 0, prize: "₹300", slots: "85/100 Left" }
-    ]
-};
-
-let currentSelection = { game: "", tournament: "", fee: 0 };
+let currentSelection = { game: "", tournamentId: "", fee: 0, title: "" };
 let currentUserData = null;
 let isSignUpMode = false;
 
-// Monitor user session status in real-time
+// 1. DYNAMIC TOURNAMENT GENERATOR (9 AM to 9 PM, every 30 mins)
+function getDynamicTournaments() {
+    const tournaments = [];
+    const modes = ["Solo", "Duo", "Squad"];
+    const maps = ["Bermuda Classic", "Erangel Classic"];
+    
+    let currentId = 1;
+    
+    // Subah 9 baje se raat 9 baje tak loops (Total 24 slots of 30 mins each)
+    for (let hour = 9; hour <= 21; hour++) {
+        for (let mins of ["00", "30"]) {
+            if (hour === 21 && mins === "30") break; // Raat 9:00 baje aakhiri match setup hai
+            
+            let displayHour = hour > 12 ? hour - 12 : hour;
+            let ampm = hour >= 12 ? "PM" : "AM";
+            let matchTime = `${displayHour}:${mins} ${ampm}`;
+            
+            // Alternating modes and setups logically
+            let modeIndex = currentId % 3;
+            let currentMode = modes[modeIndex];
+            
+            tournaments.push({
+                id: `match_${hour}_${mins}`,
+                time: matchTime,
+                mode: currentMode,
+                fee: currentMode === "Solo" ? 10 : (currentMode === "Duo" ? 20 : 40),
+                rewards: {
+                    perKill: currentMode === "Solo" ? "🪙 5 Coins" : "🪙 3 Coins",
+                    top10: currentMode === "Solo" ? "🪙 20 Coins" : "🪙 40 Coins",
+                    winner: currentMode === "Solo" ? "🪙 100 Coins" : (currentMode === "Duo" ? "🪙 200 Coins" : "🪙 400 Coins")
+                },
+                maxSlots: currentMode === "Solo" ? 50 : (currentMode === "Duo" ? 50 : 25) // 25 Teams for squad
+            });
+            currentId++;
+        }
+    }
+    return tournaments;
+}
+
+// Session Monitor
 auth.onAuthStateChanged(async (user) => {
     const loginBtn = document.getElementById('loginNavBtn');
     const profileHeader = document.getElementById('userProfileHeader');
-    
     if (user) {
         if(loginBtn) loginBtn.classList.add('hidden');
         if(profileHeader) profileHeader.classList.remove('hidden');
-        
-        // Fetch active real-time coins from user profile
         db.collection('users').doc(user.uid).onSnapshot((doc) => {
             if (doc.exists) {
                 currentUserData = doc.data();
                 const coinEl = document.getElementById('user-coins');
                 if(coinEl) coinEl.innerText = currentUserData.coins;
             }
-        }, (err) => {
-            console.error("Snapshot error:", err);
         });
     } else {
         if(loginBtn) loginBtn.classList.remove('hidden');
@@ -61,7 +80,6 @@ auth.onAuthStateChanged(async (user) => {
     }
 });
 
-// Navigation & Auth Flow State management
 function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
 function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 function toggleAuthMode() {
@@ -70,42 +88,27 @@ function toggleAuthMode() {
     document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
 }
 
-// Intercept Auth Actions & Process Sign-in
 document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const inputVal = document.getElementById('authIdentifier').value.trim();
     const pass = document.getElementById('authPassword').value;
-
-    // Convert raw mobile number/username safely into internal email strings
     const dynamicEmail = inputVal.includes('@') ? inputVal : `${inputVal}@skesports.com`;
 
     try {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
-            // Default 0 coins assigned to every new signup user document
-            await db.collection('users').doc(cred.user.uid).set({
-                mobile: inputVal,
-                coins: 0
-            });
-            alert("Registration Complete! Default wallet: 0 Coins. Please contact Admin to top up.");
+            await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0 });
+            alert("Registered successfully! Wallet: 0 Coins.");
         } else {
             await auth.signInWithEmailAndPassword(dynamicEmail, pass);
         }
         closeAuthModal();
-    } catch (err) {
-        alert("Authentication Failed: " + err.message);
-    }
+    } catch (err) { alert("Error: " + err.message); }
 });
 
 function logoutUser() { auth.signOut().then(() => location.reload()); }
-
-// Security Gatekeeper Layer
 function checkAuthAndSelect(gameName) {
-    if (!auth.currentUser) {
-        alert("Matches dekhne aur participate karne ke liye pehle Login karein!");
-        openAuthModal();
-        return;
-    }
+    if (!auth.currentUser) { alert("Please Login first!"); openAuthModal(); return; }
     selectGame(gameName);
 }
 
@@ -115,72 +118,84 @@ function showSection(sectionId) {
     if(targeted) targeted.classList.add('active');
 }
 
+// 2. RENDER MATCHES & REAL-TIME JOINED COUNTERS
 function selectGame(gameName) {
     currentSelection.game = gameName;
-    document.getElementById('selected-game-title').innerText = `${gameName} - Live Tournaments`;
+    document.getElementById('selected-game-title').innerText = `${gameName} - Live Schedule`;
     const container = document.getElementById('tournaments-container');
     if(!container) return;
     container.innerHTML = "";
     
-    TOURNAMENT_DATA[gameName].forEach(t => {
+    const activeMatches = getDynamicTournaments();
+    const mapName = gameName === "Free Fire MAX" ? "Bermuda Classic" : "Erangel Classic";
+    
+    activeMatches.forEach(t => {
+        const uniqueMatchKey = `${gameName.replace(/\s+/g, '')}_${t.id}`;
         const card = document.createElement('div');
         card.className = "t-card";
-        card.innerHTML = `
-            <div class="t-info">
-                <h3>${t.title}</h3>
-                <div class="t-details">
-                    <span>🪙 Entry: ${t.fee} Coins</span>
-                    <span>🏆 Prize: ${t.prize}</span>
+        card.style.cursor = "pointer";
+        
+        // Real-time counter fetch from Firestore
+        db.collection('tournaments').doc(uniqueMatchKey).onSnapshot((doc) => {
+            let joinedCount = 0;
+            if(doc.exists && doc.data().players) {
+                joinedCount = doc.data().players.length;
+            }
+            
+            card.innerHTML = `
+                <div class="t-info" onclick="toggleDetailsBox('${t.id}')">
+                    <h3>⏰ Time: ${t.time} (${t.mode})</h3>
+                    <p style="font-size:12px; color:#aaa; margin:4px 0;">🗺️ Map: ${mapName} | Click for Rewards Breakdown</p>
+                    <div class="t-details">
+                        <span>🪙 Entry: ${t.fee} Coins</span>
+                        <span style="color:#66fcf1;">👥 Joined: ${joinedCount}/${t.maxSlots}</span>
+                    </div>
+                    <!-- REWARDS HIDDEN BREAKDOWN PANEL -->
+                    <div id="details-${t.id}" class="hidden" style="background:#111; padding:10px; border-radius:4px; margin-top:10px; border-left:3px solid #ff4655; text-align:left;">
+                        <p style="margin:2px 0; font-size:13px;">🎯 Booyah/Chicken Dinner: <strong>${t.rewards.winner}</strong></p>
+                        <p style="margin:2px 0; font-size:13px;">🎖️ Top 10 Finishers: <strong>${t.rewards.top10}</strong></p>
+                        <p style="margin:2px 0; font-size:13px;">💀 Per Kill Reward: <strong>${t.rewards.perKill}</strong></p>
+                    </div>
                 </div>
-            </div>
-            <button class="join-btn" onclick="processParticipation('${t.title}', ${t.fee})">Join Now</button>
-        `;
+                <button class="join-btn" onclick="processParticipation('${uniqueMatchKey}', ${t.fee}, '${t.time} ${t.mode}')">Join Match</button>
+            `;
+        });
+        
         container.appendChild(card);
     });
     showSection('tournament-view');
 }
 
-// Transaction Ledger System (Debits Wallet Engine)
-async function processParticipation(tTitle, tFee) {
-    if (!currentUserData) {
-        alert("Error: Profile session missing. Re-login required.");
-        return;
-    }
-    
-    // Check wallet capacity limits
-    if (currentUserData.coins < tFee) {
-        showSection('wallet-topup');
-        return;
-    }
+function toggleDetailsBox(id) {
+    const el = document.getElementById(`details-${id}`);
+    if(el) el.classList.toggle('hidden');
+}
 
-    const newBalance = currentUserData.coins - tFee;
+// 3. SECURE JOINING ENGINE WITH FIREBASE ARRAYS
+async function processParticipation(uniqueMatchKey, tFee, matchInfo) {
+    if (!currentUserData) return;
+    if (currentUserData.coins < tFee) { showSection('wallet-topup'); return; }
+
     const userUID = auth.currentUser.uid;
-    const btn = document.querySelector(`button[onclick*="${tTitle}"]`);
-    if(btn) btn.disabled = true;
+    const userMobile = currentUserData.mobile;
+    const newBalance = currentUserData.coins - tFee;
 
     try {
-        // Execute atomic document storage update
+        // Atomic push player into the match array registry
+        await db.collection('tournaments').doc(uniqueMatchKey).set({
+            players: firebase.firestore.FieldValue.arrayUnion({ uid: userUID, mobile: userMobile })
+        }, { merge: true });
+
+        // Debit User Balance
         await db.collection('users').doc(userUID).update({ coins: newBalance });
         
-        // Push payload metrics safely to backup Formspree console logs
+        // Backup Logs to Formspree
         await fetch(FORMSPREE_URL, {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                Status: "SUCCESSFUL_DEBIT",
-                Player_UID: userUID,
-                User_Mobile: currentUserData.mobile,
-                Target_Game: currentSelection.game,
-                Target_Tournament: tTitle,
-                Fee_Deducted: tFee,
-                Remaining_Balance: newBalance
-            })
+            body: JSON.stringify({ Status: "MATCH_JOINED", Mobile: userMobile, Details: matchInfo, MatchKey: uniqueMatchKey })
         });
 
         showSection('success-screen');
-    } catch (err) {
-        alert("Transaction Aborted: " + err.message);
-    } finally {
-        if(btn) btn.disabled = false;
-    }
+    } catch (err) { alert("Error joining tournament: " + err.message); }
 }
