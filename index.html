@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SK eSports Premium Platform</title>
     <link rel="stylesheet" href="style.css">
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -13,8 +14,7 @@
 
     <header>
         <div class="logo-container">
-            <img src="Logo.png" alt="SK eSports Logo" class="nav-logo">
-            <span class="logo-text">SK ESPORTS</span>
+            <h1 class="logo-text">SK ESPORTS</h1>
         </div>
         <nav id="nav-controls">
             <button class="auth-btn" id="loginNavBtn" onclick="openAuthModal()">Login / Signup</button>
@@ -31,8 +31,8 @@
             <h2 id="auth-title">Login to SK eSports</h2>
             <form id="authForm">
                 <div class="form-group">
-                    <label>Mobile Number / Email:</label>
-                    <input type="text" id="authIdentifier" required placeholder="Enter your mobile/email">
+                    <label>Mobile Number:</label>
+                    <input type="text" id="authIdentifier" required placeholder="Enter 10-digit mobile number">
                 </div>
                 <div class="form-group">
                     <label>Password:</label>
@@ -40,7 +40,7 @@
                 </div>
                 <button type="submit" class="submit-btn" id="authSubmitBtn">Login</button>
             </form>
-            <p class="toggle-auth-text">Account nahi hai? <a href="#" onclick="toggleAuthMode()">Signup Karein</a></p>
+            <p class="toggle-auth-text">Account nahi hai? <a href="#" onclick="toggleAuthMode()">Signup/Register Karein</a></p>
         </div>
     </div>
 
@@ -48,7 +48,7 @@
 
         <section id="game-selection" class="interface-section active">
             <h1 class="main-title">SELECT YOUR GAME</h1>
-            <p class="subtitle">Choose a game to view live tournaments</p>
+            <p class="subtitle">Tournament me bhag lene ke liye game select karein</p>
             <div class="game-grid">
                 <div class="game-card ff-card" onclick="checkAuthAndSelect('Free Fire MAX')">
                     <div class="game-overlay"></div>
@@ -69,17 +69,29 @@
 
         <section id="wallet-topup" class="interface-section">
             <button class="back-btn" onclick="showSection('tournament-view')">← Back</button>
-            <div class="success-card" style="border-color: #ff4655;">
-                <div class="success-icon">⚠️</div>
+            
+            <div class="success-card" style="border-color: #ff4655; text-align: center;">
+                <div class="success-icon" style="color: #ff4655;">⚠️</div>
                 <h1>Insufficient Coins!</h1>
-                <p>Is tournament me participate karne ke liye aapke paas paryapt coins nahi hain.</p>
-                <div class="payment-box">
-                    <h3>📥 Top-up Coins</h3>
-                    <p>₹1 = 1 Coin</p>
-                    <p style="font-size: 14px; color: #aaa; margin-top: 10px;">UPI ID: skesports@ybl</p>
-                    <p style="font-size: 12px; color: #ff4655; margin-top: 5px;">*Pay karne ke baad apna screenshot aur Mobile no. Admin ko WhatsApp karein, coins 5 mins me add ho jayenge.</p>
+                <p>Is tournament me bhag lene ke liye aapke wallet me paryapt coins nahi hain.</p>
+                
+                <div class="payment-box" style="background: #11141a; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px dashed #444;">
+                    <h3>📥 Top-up Wallet (₹1 = 1 Coin)</h3>
+                    <p style="color: #aaa; font-size: 14px; margin-bottom: 15px;">Niche diye gaye QR Code ko scan karke payment karein:</p>
+                    
+                    <div class="qr-container" style="background: #fff; padding: 15px; display: inline-block; border-radius: 8px; margin-bottom: 15px;">
+                        <img src="qr.png" alt="SK eSports UPI QR" style="width: 200px; height: auto; display: block; margin: 0 auto;">
+                    </div>
+                    
+                    <p style="font-weight: bold; color: #66fcf1; font-size: 16px;">Gaurav | Terminal 1-C</p>
+                    <p style="font-size: 13px; color: #ff4655; margin-top: 10px; line-height: 1.5; text-align: left;">
+                        <strong>*Zaroori Suchna:</strong> Pay karne ke baad transaction ka <strong>Screenshot</strong> aur apna <strong>Registered Mobile Number</strong> niche diye gaye button par click karke Admin ko WhatsApp par send karein. Coins 5-10 mins me add ho jayenge.
+                    </p>
                 </div>
-                <a href="https://wa.me/916206792655" target="_blank" class="cta-btn" style="background: #2ecc71; color: #fff;">Send Screenshot to Admin</a>
+                
+                <a href="https://wa.me/916206792655?text=Hello%20Admin,%20Maine%20coins%20ke%20liye%20pay%20kiya%20hai.%20Ye%20raha%20screenshot." target="_blank" class="cta-btn" style="background: #2ecc71; color: #fff; margin-top: 20px; display: inline-block; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 4px;">
+                    💬 Send Screenshot to Admin via WhatsApp
+                </a>
             </div>
         </section>
 
@@ -87,7 +99,7 @@
             <div class="success-card">
                 <div class="success-icon">🎉</div>
                 <h1>PARTICIPATED SUCCESSFULLY</h1>
-                <p>Aapke wallet se coins deduct ho gaye hain aur aapka slot reserve ho chuka hai!</p>
+                <p>Aapke wallet se coins successfully deduct ho gaye hain aur aapka slot lock ho chuka hai!</p>
                 <button class="cta-btn" onclick="showSection('game-selection')">Go To Dashboard</button>
             </div>
         </section>
