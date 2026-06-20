@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SK eSports Premium Platform</title>
     <link rel="stylesheet" href="style.css">
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -12,11 +13,13 @@
 <body>
 
     <header>
-        <div class="logo-container"><h1 class="logo-text" onclick="showSection('game-selection')" style="cursor:pointer;">SK ESPORTS</h1></div>
+        <div class="logo-container">
+            <h1 class="logo-text" onclick="showSection('game-selection')" style="cursor:pointer;">SK ESPORTS</h1>
+        </div>
         <nav id="nav-controls">
             <button class="auth-btn" id="loginNavBtn" onclick="openAuthModal()">Login / Signup</button>
             <div id="userProfileHeader" class="hidden">
-                <span id="header-wallet" onclick="openWalletModal()" style="cursor: pointer; background: #1c232d; padding: 6px 12px; border-radius: 20px; border: 1px solid #ff4655;">🪙 <span id="user-coins">0</span> Coins</span>
+                <span id="header-wallet" onclick="openWalletModal()" style="cursor: pointer; background: #1c232d; padding: 6px 12px; border-radius: 20px; border: 1px solid #ff4655; font-weight: bold;">🪙 <span id="user-coins">0</span> Coins</span>
                 <button class="logout-btn" onclick="logoutUser()">Logout</button>
             </div>
         </nav>
@@ -27,48 +30,137 @@
             <button class="close-modal" onclick="closeAuthModal()">×</button>
             <h2 id="auth-title">Login to SK eSports</h2>
             <form id="authForm">
-                <div class="form-group"><label>Mobile:</label><input type="text" id="authIdentifier" required placeholder="Enter 10-digit mobile"></div>
-                <div class="form-group"><label>Password:</label><input type="password" id="authPassword" required placeholder="Enter password"></div>
+                <div class="form-group">
+                    <label>Mobile Number:</label>
+                    <input type="text" id="authIdentifier" required placeholder="Enter 10-digit mobile number">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="authPassword" required placeholder="Enter password">
+                </div>
                 <button type="submit" class="submit-btn" id="authSubmitBtn">Login</button>
             </form>
-            <p class="toggle-auth-text"><a href="#" onclick="toggleAuthMode()">Switch Mode</a></p>
+            <p class="toggle-auth-text">Account nahi hai? <a href="#" onclick="toggleAuthMode()">Signup/Register Karein</a></p>
         </div>
     </div>
 
-    <!-- Join Modal -->
+    <div id="walletModal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 450px; width: 90%;">
+            <button class="close-modal" onclick="closeWalletModal()">×</button>
+            <h2 style="color: #66fcf1; text-align: center; margin-bottom: 5px;">💰 My SK Wallet</h2>
+            <p style="text-align: center; font-size: 24px; font-weight: bold; margin: 10px 0; color: #fff;">🪙 <span id="modal-user-coins">0</span> Coins</p>
+            
+            <div style="background: #11141a; padding: 10px; border-radius: 6px; border: 1px solid #222; font-size: 13px; margin-bottom: 15px; line-height: 1.6;">
+                <p style="margin: 3px 0; color: #aaa;">🟢 Minimum Deposit: <strong>₹20 (1 Coin = ₹1)</strong></p>
+                <p style="margin: 3px 0; color: #aaa;">🔴 Minimum Withdrawal: <strong>₹50</strong></p>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <a href="https://wa.me/916206792655?text=Hello%20SK%20eSports,%20Mujhe%20coins%20deposit%20karne%20hain." target="_blank" style="flex: 1; background: #2ecc71; color: #fff; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px;">📥 Deposit Money</a>
+                <a href="https://wa.me/919060268948?text=Hello%20SK%20eSports,%20Mujhe%20coins%20withdrawal%20karne%20hain." target="_blank" style="flex: 1; background: #e74c3c; color: #fff; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px;">📤 Withdraw Money</a>
+            </div>
+
+            <h3 style="font-size: 14px; color: #66fcf1; border-bottom: 1px solid #222; padding-bottom: 5px; margin-bottom: 8px;">📊 Coin Passbook / History:</h3>
+            <div style="max-height: 180px; overflow-y: auto; background: #0d1117; padding: 5px; border-radius: 6px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #333; color: #aaa;">
+                            <th style="padding: 6px 4px;">Detail / Match</th>
+                            <th style="padding: 6px 4px; text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wallet-history-rows">
+                        <tr><td colspan="2" style="padding: 10px; color: #aaa; text-align: center;">No transaction history found.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div id="joinModal" class="modal-overlay hidden">
         <div class="modal-card">
             <button class="close-modal" onclick="closeJoinModal()">×</button>
             <h2>Player Registration</h2>
+            <p style="color:#aaa; font-size:13px; margin-bottom:15px; text-align:center;">Tournament entry ke liye apni game details sahi se bharein.</p>
             <form id="joinForm">
-                <div class="form-group"><label>In-Game Name:</label><input type="text" id="playerGameName" required></div>
-                <div class="form-group"><label>Game UID:</label><input type="text" id="playerGameUID" required></div>
+                <div class="form-group">
+                    <label>In-Game Name (IGN):</label>
+                    <input type="text" id="playerGameName" required placeholder="e.g., SK_GAURAV">
+                </div>
+                <div class="form-group">
+                    <label>Game Character UID:</label>
+                    <input type="text" id="playerGameUID" required placeholder="e.g., 47122226443">
+                </div>
                 <button type="submit" class="submit-btn" style="background:#2ecc71;">Confirm & Join</button>
             </form>
         </div>
     </div>
 
     <main class="container">
+
         <section id="game-selection" class="interface-section active">
             <h1 class="main-title">SELECT YOUR GAME</h1>
+            <p class="subtitle">Tournament me bhag lene ke liye game select karein</p>
             <div class="game-grid">
-                <div class="game-card ff-card" onclick="checkAuthAndSelect('Free Fire MAX')"><h2>FREE FIRE MAX</h2></div>
-                <div class="game-card bgmi-card" onclick="checkAuthAndSelect('BGMI')"><h2>BGMI</h2></div>
+                <div class="game-card ff-card" onclick="checkAuthAndSelect('Free Fire MAX')">
+                    <div class="game-overlay"></div>
+                    <h2>FREE FIRE MAX</h2>
+                </div>
+                <div class="game-card bgmi-card" onclick="checkAuthAndSelect('BGMI')">
+                    <div class="game-overlay"></div>
+                    <h2>BGMI</h2>
+                </div>
             </div>
         </section>
 
         <section id="tournament-view" class="interface-section">
-            <button class="back-btn" onclick="showSection('game-selection')">← Back</button>
-            <h2 id="selected-game-title">Tournaments</h2>
-            <div class="tabs-container" style="display:flex; gap:5px;">
-                <button class="tab-btn" onclick="switchMatchTab('upcoming')" id="tab-upcoming">Upcoming</button>
-                <button class="tab-btn" onclick="switchMatchTab('live')" id="tab-live">Live</button>
-                <button class="tab-btn" onclick="switchMatchTab('my_joined')" id="tab-my_joined">My Matches</button>
-                <button class="tab-btn" onclick="switchMatchTab('past')" id="tab-past">Past</button>
+            <button class="back-btn" onclick="showSection('game-selection')">← Back to Games</button>
+            <h2 id="selected-game-title" class="section-title">Tournaments</h2>
+            
+            <div class="tabs-container" style="display: flex; background: #11141a; padding: 5px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #222; gap: 5px;">
+                <button class="tab-btn" onclick="switchMatchTab('upcoming')" id="tab-upcoming" style="flex: 1; background: #ff4655; border: none; color: #fff; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">📅 Upcoming</button>
+                <button class="tab-btn" onclick="switchMatchTab('live')" id="tab-live" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">🔴 Live</button>
+                <button class="tab-btn" onclick="switchMatchTab('my_joined')" id="tab-my_joined" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">🎖️ My Matches</button>
+                <button class="tab-btn" onclick="switchMatchTab('past')" id="tab-past" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">🏁 Past</button>
             </div>
+
             <div class="tournament-list" id="tournaments-container"></div>
         </section>
+
+        <section id="wallet-topup" class="interface-section">
+            <button class="back-btn" onclick="showSection('tournament-view')">← Back</button>
+            <div class="success-card" style="border-color: #ff4655; text-align: center;">
+                <div class="success-icon" style="color: #ff4655;">⚠️</div>
+                <h1>Insufficient Coins!</h1>
+                <p>Is tournament me bhag lene ke liye aapke wallet me coins nahi hain.</p>
+                <div class="payment-box" style="background: #11141a; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px dashed #444;">
+                    <h3>📥 Top-up Wallet (₹1 = 1 Coin)</h3>
+                    <div class="qr-container" style="background: #fff; padding: 15px; display: inline-block; border-radius: 8px; margin-bottom: 15px;">
+                        <img src="qr.png" alt="SK eSports UPI QR" style="width: 200px; height: auto; display: block; margin: 0 auto;">
+                    </div>
+                    <p style="font-weight: bold; color: #66fcf1; font-size: 16px;">Gaurav | Terminal 1-C</p>
+                    <p style="font-size: 13px; color: #ff4655; margin-top: 10px; line-height: 1.5; text-align: left;">
+                        <strong>*Zaroori Suchna:</strong> Pay karne ke baad Screenshot aur Mobile Number Admin ko bhejein.
+                    </p>
+                </div>
+                <a href="https://wa.me/916206792655?text=Hello%20Admin,%20Maine%20coins%20ke%20liye%20pay%20kiya%20hai." target="_blank" class="cta-btn" style="background: #2ecc71; color: #fff; margin-top: 20px; display: inline-block; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 4px;">
+                    💬 Send Screenshot to Admin via WhatsApp
+                </a>
+            </div>
+        </section>
+
+        <section id="success-screen" class="interface-section success-container">
+            <div class="success-card">
+                <div class="success-icon">🎉</div>
+                <h1>PARTICIPATED SUCCESSFULLY</h1>
+                <p>Aapka slot entry dynamic registry me safe lock ho chuka hai!</p>
+                <button class="cta-btn" onclick="showSection('game-selection')">Go To Dashboard</button>
+            </div>
+        </section>
+
     </main>
+
     <script src="script.js"></script>
 </body>
-</html>
+                        </html>
+    
