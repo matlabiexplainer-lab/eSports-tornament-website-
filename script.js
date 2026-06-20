@@ -72,11 +72,10 @@ auth.onAuthStateChanged((user) => {
                 const coinEl = document.getElementById('user-coins');
                 if(coinEl) coinEl.innerText = currentUserData.coins;
 
-                // Sync Coin Balance with Wallet Popup
+                // Sync Wallet Popup balance elements
                 const modalCoinEl = document.getElementById('modal-user-coins');
                 if(modalCoinEl) modalCoinEl.innerText = currentUserData.coins;
                 
-                // Load historical ledger rows
                 renderWalletHistory();
             }
         });
@@ -87,15 +86,20 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
+// FIXED: INSTANT NON-BLOCKING ROUTER (Zero Lag Click Gateway)
 function checkAuthAndSelect(gameName) {
     if (!auth.currentUser) { openAuthModal(); return; }
     currentSelection.game = gameName;
+    
+    // UI section updates immediately before script loads table elements
+    showSection('tournament-view');
     switchMatchTab('upcoming'); 
 }
 
 function showSection(sectionId) {
     document.querySelectorAll('.interface-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(sectionId).classList.add('active');
+    const targetSection = document.getElementById(sectionId);
+    if(targetSection) targetSection.classList.add('active');
 }
 
 function switchMatchTab(tabName) {
@@ -115,7 +119,9 @@ function switchMatchTab(tabName) {
 // RENDERING LIST LOGIC
 function renderMatchesList() {
     const gameName = currentSelection.game;
-    document.getElementById('selected-game-title').innerText = gameName;
+    const titleEl = document.getElementById('selected-game-title');
+    if(titleEl) titleEl.innerText = gameName;
+    
     const container = document.getElementById('tournaments-container');
     if(!container) return;
     container.innerHTML = "";
@@ -136,7 +142,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Managed inside callback
+            // Evaluated via callbacks asynchronously
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -295,8 +301,6 @@ function renderMatchesList() {
             if(actionContainer) actionContainer.innerHTML = actionBtnHtml;
         });
     });
-
-    showSection('tournament-view');
 }
 
 function toggleDetailsBox(id) {
@@ -304,7 +308,6 @@ function toggleDetailsBox(id) {
     if(el) el.classList.toggle('hidden');
 }
 
-// NEW: CUSTOM MODAL OPEN & CLOSE CONTROLS
 function openWalletModal() {
     if (!auth.currentUser) return;
     document.getElementById('walletModal').classList.remove('hidden');
@@ -314,7 +317,6 @@ function closeWalletModal() {
     document.getElementById('walletModal').classList.add('hidden');
 }
 
-// NEW: RENDER ACTIVE PASSBOOK ROWS FROM USER DATA
 function renderWalletHistory() {
     const historyTableBody = document.getElementById('wallet-history-rows');
     if (!historyTableBody) return;
@@ -372,7 +374,6 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
     const userMobile = currentUserData.mobile;
     const newBalance = currentUserData.coins - tFee;
 
-    // Generate local timestamp string for ledger logs
     const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
 
     try {
@@ -387,7 +388,6 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
             })
         }, { merge: true });
 
-        // Update Balance and push a dynamic transaction log securely
         await db.collection('users').doc(userUID).update({ 
             coins: newBalance,
             history: firebase.firestore.FieldValue.arrayUnion({
@@ -417,7 +417,6 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     try {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
-            // Added default empty history array initializing structure on register
             await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
             alert("Registered! Balance: 0 Coins.");
         } else {
@@ -430,4 +429,5 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
 function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
 function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 function toggleAuthMode() {
-    isSignU
+    isSignUpMode = !isSignUpMode;
+    document.getElementById('auth-title').innerText = isSignUpMode ?
