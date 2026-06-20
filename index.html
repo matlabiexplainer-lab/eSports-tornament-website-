@@ -19,7 +19,7 @@
         <nav id="nav-controls">
             <button class="auth-btn" id="loginNavBtn" onclick="openAuthModal()">Login / Signup</button>
             <div id="userProfileHeader" class="hidden">
-                <span id="header-wallet">🪙 <span id="user-coins">0</span> Coins</span>
+                <span id="header-wallet" onclick="openWalletModal()" style="cursor: pointer; background: #1c232d; padding: 6px 12px; border-radius: 20px; border: 1px solid #ff4655; font-weight: bold; transition: 0.3s;">🪙 <span id="user-coins">0</span> Coins</span>
                 <button class="logout-btn" onclick="logoutUser()">Logout</button>
             </div>
         </nav>
@@ -41,6 +41,39 @@
                 <button type="submit" class="submit-btn" id="authSubmitBtn">Login</button>
             </form>
             <p class="toggle-auth-text">Account nahi hai? <a href="#" onclick="toggleAuthMode()">Signup/Register Karein</a></p>
+        </div>
+    </div>
+
+    <div id="walletModal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 450px; width: 90%;">
+            <button class="close-modal" onclick="closeWalletModal()">×</button>
+            <h2 style="color: #66fcf1; text-align: center; margin-bottom: 5px;">💰 My SK Wallet</h2>
+            <p style="text-align: center; font-size: 24px; font-weight: bold; margin: 10px 0; color: #fff;">🪙 <span id="modal-user-coins">0</span> Coins</p>
+            
+            <div style="background: #11141a; padding: 10px; border-radius: 6px; border: 1px solid #222; font-size: 13px; margin-bottom: 15px; line-height: 1.6;">
+                <p style="margin: 3px 0; color: #aaa;">🟢 Minimum Deposit: <strong>₹20 (1 Coin = ₹1)</strong></p>
+                <p style="margin: 3px 0; color: #aaa;">🔴 Minimum Withdrawal: <strong>₹50</strong></p>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <a href="https://wa.me/916206792655?text=Hello%20SK%20eSports,%20Mujhe%20coins%20deposit%20karne%20hain." target="_blank" style="flex: 1; background: #2ecc71; color: #fff; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px;">📥 Deposit Money</a>
+                <a href="https://wa.me/919060268948?text=Hello%20SK%20eSports,%20Mujhe%20coins%20withdrawal%20karne%20hain." target="_blank" style="flex: 1; background: #e74c3c; color: #fff; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px;">📤 Withdraw Money</a>
+            </div>
+
+            <h3 style="font-size: 14px; color: #66fcf1; border-bottom: 1px solid #222; padding-bottom: 5px; margin-bottom: 8px;">📊 Coin Passbook / History:</h3>
+            <div style="max-height: 180px; overflow-y: auto; background: #0d1117; padding: 5px; border-radius: 6px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #333; color: #aaa;">
+                            <th style="padding: 6px 4px;">Detail / Match</th>
+                            <th style="padding: 6px 4px; text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wallet-history-rows">
+                        <tr><td colspan="2" style="padding: 10px; color: #aaa; text-align: center;">No transaction history found.</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
