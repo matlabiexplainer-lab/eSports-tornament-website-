@@ -6,14 +6,12 @@
     <title>SK eSports Premium Platform</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- Firebase SDK Compatibility Layers -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-    <!-- PREMIUM HEADER NAVIGATION -->
     <header>
         <div class="logo-container">
             <h1 class="logo-text">SK ESPORTS</h1>
@@ -27,7 +25,6 @@
         </nav>
     </header>
 
-    <!-- AUTOMATIC AUTHENTICATION MODAL (POPUP) -->
     <div id="authModal" class="modal-overlay hidden">
         <div class="modal-card">
             <button class="close-modal" onclick="closeAuthModal()">×</button>
@@ -47,10 +44,8 @@
         </div>
     </div>
 
-    <!-- MAIN INTERFACE CONTAINER -->
     <main class="container">
 
-        <!-- 1. GAME SELECTION SCREEN -->
         <section id="game-selection" class="interface-section active">
             <h1 class="main-title">SELECT YOUR GAME</h1>
             <p class="subtitle">Tournament me bhag lene ke liye game select karein</p>
@@ -66,12 +61,10 @@
             </div>
         </section>
 
-        <!-- 2. TOURNAMENT DETAILS SCREEN WITH TABS -->
         <section id="tournament-view" class="interface-section">
             <button class="back-btn" onclick="showSection('game-selection')">← Back to Games</button>
             <h2 id="selected-game-title" class="section-title">Tournaments</h2>
             
-            <!-- Premium Category Tabs Navigation -->
             <div class="tabs-container" style="display: flex; background: #11141a; padding: 5px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #222; overflow-x: auto; gap: 5px;">
                 <button class="tab-btn active-tab" onclick="switchMatchTab('upcoming')" id="tab-upcoming" style="flex: 1; background: #ff4655; border: none; color: #fff; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">📅 Upcoming</button>
                 <button class="tab-btn" onclick="switchMatchTab('live')" id="tab-live" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">🔴 Live</button>
@@ -79,11 +72,9 @@
                 <button class="tab-btn" onclick="switchMatchTab('past')" id="tab-past" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">🏁 Past</button>
             </div>
 
-            <!-- Tournaments Card List Grid Container -->
             <div class="tournament-list" id="tournaments-container"></div>
         </section>
 
-        <!-- 3. WALLET TOP-UP SCREEN -->
         <section id="wallet-topup" class="interface-section">
             <button class="back-btn" onclick="showSection('tournament-view')">← Back</button>
             
@@ -112,7 +103,6 @@
             </div>
         </section>
 
-        <!-- 4. REGISTRATION SUCCESS SCREEN -->
         <section id="success-screen" class="interface-section success-container">
             <div class="success-card">
                 <div class="success-icon">🎉</div>
