@@ -9,7 +9,7 @@ const firebaseConfig = {
     measurementId: "G-KW6J0GE4TF"
 };
 
-// Safe Initialization Gateway
+// Non-Blocking Safe Initialization Gateway
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -87,15 +87,13 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// INSTANT NON-BLOCKING GAME SELECTION CLICK (Zero Lag Fix)
+// INSTANT NON-BLOCKING GAME SELECTION CLICK
 function checkAuthAndSelect(gameName) {
     if (!auth.currentUser) { 
         openAuthModal(); 
         return; 
     }
     currentSelection.game = gameName;
-    
-    // UI changes instantly to completely bypass loop freezes
     showSection('tournament-view');
     switchMatchTab('upcoming'); 
 }
@@ -148,7 +146,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Checked inside callback asynchronously
+            // Evaluated inside snapshot logic block
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -158,6 +156,8 @@ function renderMatchesList() {
         const card = document.createElement('div');
         card.className = "t-card";
         card.id = `card_${uniqueMatchKey}`;
+        
+        // BACKTICKS STRINGS COMPLETELY ESCAPED AND FIXED HERE
         card.innerHTML = `
             <div class="t-info" onclick="toggleDetailsBox('${t.id}')">
                 <h3>⏰ Time: ${t.time} (${t.mode})</h3>
@@ -264,7 +264,6 @@ function renderMatchesList() {
                         if(tableWrapper) tableWrapper.classList.add('hidden');
                         if(lockWrapper) lockWrapper.classList.remove('hidden');
                     } else {
-                        if(tableWrapper) tableWrapper.substring(0); 
                         if(tableWrapper) tableWrapper.classList.remove('hidden');
                         if(lockWrapper) lockWrapper.classList.add('hidden');
                         
@@ -435,4 +434,6 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
 });
 
 function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
-function closeAuthModal() { document.getElementById('authModal').class
+function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
+function toggleAuthMode() {
+    isSignUpMode 
