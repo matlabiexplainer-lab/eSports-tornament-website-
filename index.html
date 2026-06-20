@@ -6,12 +6,14 @@
     <title>SK eSports Premium Platform</title>
     <link rel="stylesheet" href="style.css">
     
+    <!-- Core Firebase SDKs (Legacy Stable Version) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
+    <!-- NAVIGATION HEADER -->
     <header>
         <div class="logo-container">
             <h1 class="logo-text" onclick="showSection('game-selection')" style="cursor:pointer;">SK ESPORTS</h1>
@@ -19,12 +21,14 @@
         <nav id="nav-controls">
             <button class="auth-btn" id="loginNavBtn" onclick="openAuthModal()">Login / Signup</button>
             <div id="userProfileHeader" class="hidden">
+                <!-- Coin Balance Indicator with Click Event to open Wallet Panel -->
                 <span id="header-wallet" onclick="openWalletModal()" style="cursor: pointer; background: #1c232d; padding: 6px 12px; border-radius: 20px; border: 1px solid #ff4655; font-weight: bold;">🪙 <span id="user-coins">0</span> Coins</span>
                 <button class="logout-btn" onclick="logoutUser()">Logout</button>
             </div>
         </nav>
     </header>
 
+    <!-- AUTH POPUP MODAL -->
     <div id="authModal" class="modal-overlay hidden">
         <div class="modal-card">
             <button class="close-modal" onclick="closeAuthModal()">×</button>
@@ -44,22 +48,26 @@
         </div>
     </div>
 
+    <!-- PREMIUM CUSTOM WALLET & HISTORY DASHBOARD MODAL -->
     <div id="walletModal" class="modal-overlay hidden">
         <div class="modal-card" style="max-width: 450px; width: 90%;">
             <button class="close-modal" onclick="closeWalletModal()">×</button>
-            <h2 style="color: #66fcf1; text-align: center; margin-bottom: 5px;">💰 My SK Wallet</h2>
+            <h2 style="color: #66fcf1; text-align: center; margin-bottom: 5px;">💰 SK Wallet Dashboard</h2>
             <p style="text-align: center; font-size: 24px; font-weight: bold; margin: 10px 0; color: #fff;">🪙 <span id="modal-user-coins">0</span> Coins</p>
             
-            <div style="background: #11141a; padding: 10px; border-radius: 6px; border: 1px solid #222; font-size: 13px; margin-bottom: 15px; line-height: 1.6;">
-                <p style="margin: 3px 0; color: #aaa;">🟢 Minimum Deposit: <strong>₹20 (1 Coin = ₹1)</strong></p>
-                <p style="margin: 3px 0; color: #aaa;">🔴 Minimum Withdrawal: <strong>₹50</strong></p>
+            <!-- Deposit and Withdrawal Rules Grid -->
+            <div style="background: #11141a; padding: 12px; border-radius: 6px; border: 1px solid #222; font-size: 13px; margin-bottom: 15px; line-height: 1.6;">
+                <p style="margin: 3px 0; color: #2ecc71; font-weight: bold;">📥 Minimum Deposit: ₹20 (1 Coin = ₹1)</p>
+                <p style="margin: 3px 0; color: #e74c3c; font-weight: bold;">📤 Minimum Withdrawal: ₹50</p>
             </div>
 
+            <!-- WhatsApp Team Integration Panel -->
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <a href="https://wa.me/916206792655?text=Hello%20SK%20eSports,%20Mujhe%20coins%20deposit%20karne%20hain." target="_blank" style="flex: 1; background: #2ecc71; color: #fff; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px;">📥 Deposit Money</a>
-                <a href="https://wa.me/919060268948?text=Hello%20SK%20eSports,%20Mujhe%20coins%20withdrawal%20karne%20hain." target="_blank" style="flex: 1; background: #e74c3c; color: #fff; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px;">📤 Withdraw Money</a>
+                <a href="https://wa.me/916206792655?text=Hello%20SK%20eSports,%20Mujhe%20coins%20deposit%20karne%20hain." target="_blank" style="flex: 1; background: #2ecc71; color: #fff; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">📥 Deposit Support</a>
+                <a href="https://wa.me/919060268948?text=Hello%20SK%20eSports,%20Mujhe%20coins%20withdrawal%20karne%20hain." target="_blank" style="flex: 1; background: #e74c3c; color: #fff; text-decoration: none; text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">📤 Withdraw Support</a>
             </div>
 
+            <!-- Coin Passbook/History Table -->
             <h3 style="font-size: 14px; color: #66fcf1; border-bottom: 1px solid #222; padding-bottom: 5px; margin-bottom: 8px;">📊 Coin Passbook / History:</h3>
             <div style="max-height: 180px; overflow-y: auto; background: #0d1117; padding: 5px; border-radius: 6px;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
@@ -77,6 +85,7 @@
         </div>
     </div>
 
+    <!-- CUSTOM JOIN MODAL (POPUP) -->
     <div id="joinModal" class="modal-overlay hidden">
         <div class="modal-card">
             <button class="close-modal" onclick="closeJoinModal()">×</button>
@@ -96,8 +105,10 @@
         </div>
     </div>
 
+    <!-- MAIN CORES -->
     <main class="container">
 
+        <!-- 1. GAME SELECTION SCREEN -->
         <section id="game-selection" class="interface-section active">
             <h1 class="main-title">SELECT YOUR GAME</h1>
             <p class="subtitle">Tournament me bhag lene ke liye game select karein</p>
@@ -113,6 +124,7 @@
             </div>
         </section>
 
+        <!-- 2. TOURNAMENT VIEW SECTION WITH FIXED NAVIGATION TABS -->
         <section id="tournament-view" class="interface-section">
             <button class="back-btn" onclick="showSection('game-selection')">← Back to Games</button>
             <h2 id="selected-game-title" class="section-title">Tournaments</h2>
@@ -127,6 +139,7 @@
             <div class="tournament-list" id="tournaments-container"></div>
         </section>
 
+        <!-- 3. WALLET INSUFFICIENT TOPUP SCREEN -->
         <section id="wallet-topup" class="interface-section">
             <button class="back-btn" onclick="showSection('tournament-view')">← Back</button>
             <div class="success-card" style="border-color: #ff4655; text-align: center;">
@@ -149,6 +162,7 @@
             </div>
         </section>
 
+        <!-- 4. SUCCESS CONTAINER -->
         <section id="success-screen" class="interface-section success-container">
             <div class="success-card">
                 <div class="success-icon">🎉</div>
