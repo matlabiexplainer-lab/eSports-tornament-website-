@@ -21,7 +21,7 @@ let currentUserData = null;
 let isSignUpMode = false;
 let currentActiveTab = "upcoming";
 
-// 1. GENERATE SCHEDULE ARRAYS
+// GENERATE SCHEDULE ARRAYS
 function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
@@ -80,10 +80,7 @@ auth.onAuthStateChanged((user) => {
 });
 
 function checkAuthAndSelect(gameName) {
-    if (!auth.currentUser) { 
-        openAuthModal(); 
-        return; 
-    }
+    if (!auth.currentUser) { openAuthModal(); return; }
     currentSelection.game = gameName;
     switchMatchTab('upcoming'); 
 }
@@ -107,7 +104,7 @@ function switchMatchTab(tabName) {
     renderMatchesList();
 }
 
-// 2. RENDERING LIST LOGIC
+// RENDERING LIST LOGIC WITH LIVE ROOM ID AND PASSWORD GATEKEEPER
 function renderMatchesList() {
     const gameName = currentSelection.game;
     document.getElementById('selected-game-title').innerText = gameName;
@@ -131,7 +128,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Asynchronous flow skip
+            // Async handling
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -149,6 +146,13 @@ function renderMatchesList() {
                     <span>🪙 Entry: ${t.fee} Coins</span>
                     <span id="count_${uniqueMatchKey}" style="color:#66fcf1;">👥 Joined: Loading...</span>
                 </div>
+                
+                <div id="room-box-${uniqueMatchKey}" class="hidden" style="background:#1e2736; padding:12px; border-radius:6px; margin-top:10px; border:1px dashed #66fcf1; color:#fff; text-align:left;">
+                    <h4 style="margin:0 0 5px 0; color:#66fcf1; font-size:14px;">🔑 Official Room Details:</h4>
+                    <p style="margin:3px 0; font-size:13px;">Room ID: <span id="roomIdVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting Admin...</span></p>
+                    <p style="margin:3px 0; font-size:13px;">Password: <span id="roomPassVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting Admin...</span></p>
+                </div>
+
                 <div id="details-${t.id}" class="hidden" style="background:#0d1117; padding:10px; border-radius:6px; margin-top:10px; border-left:3px solid #ff4655;">
                     <p style="margin:4px 0; font-size:13px;">🎯 Winner/Booyah: <strong>${t.rewards.winner}</strong></p>
                     <p style="margin:4px 0; font-size:13px;">🎖️ Top 10 Finisher: <strong>${t.rewards.top10}</strong></p>
@@ -162,13 +166,21 @@ function renderMatchesList() {
         db.collection('tournaments').doc(uniqueMatchKey).onSnapshot((doc) => {
             let joinedCount = 0;
             let isUserJoined = false;
+            let databaseRoomId = "Awaiting Admin...";
+            let databaseRoomPass = "Awaiting Admin...";
             
-            if(doc.exists && doc.data().players) {
-                const plist = doc.data().players;
-                joinedCount = plist.length;
-                if(auth.currentUser) {
-                    isUserJoined = plist.some(p => p.uid === auth.currentUser.uid);
+            if(doc.exists) {
+                const docData = doc.data();
+                if(docData.players) {
+                    const plist = docData.players;
+                    joinedCount = plist.length;
+                    if(auth.currentUser) {
+                        isUserJoined = plist.some(p => p.uid === auth.currentUser.uid);
+                    }
                 }
+                // Extract room credentials from Firestore document securely
+                if(docData.roomId) databaseRoomId = docData.roomId;
+                if(docData.roomPass) databaseRoomPass = docData.roomPass;
             }
 
             if (currentActiveTab === "my_joined" && !isUserJoined) {
@@ -178,6 +190,18 @@ function renderMatchesList() {
 
             const counterEl = document.getElementById(`count_${uniqueMatchKey}`);
             if(counterEl) counterEl.innerText = `👥 Joined: ${joinedCount}/${t.maxSlots}`;
+
+            // Reveal Room details securely if player profile matches registry logs
+            const roomContainer = document.getElementById(`room-box-${uniqueMatchKey}`);
+            if(roomContainer) {
+                if (isUserJoined) {
+                    roomContainer.classList.remove('hidden');
+                    document.getElementById(`roomIdVal-${uniqueMatchKey}`).innerText = databaseRoomId;
+                    document.getElementById(`roomPassVal-${uniqueMatchKey}`).innerText = databaseRoomPass;
+                } else {
+                    roomContainer.classList.add('hidden');
+                }
+            }
 
             let actionBtnHtml = "";
             if (status === "past") {
@@ -203,34 +227,24 @@ function toggleDetailsBox(id) {
     if(el) el.classList.toggle('hidden');
 }
 
-// 3. CUSTOM POPUP FORM HOOKS SYSTEM
 function openJoinModal(matchKey, fee, matchInfo) {
     if (!currentUserData) return;
     if (currentUserData.coins < fee) { showSection('wallet-topup'); return; }
-    
-    // Save selections globally for the current transaction
     currentSelection.currentMatchKey = matchKey;
     currentSelection.fee = fee;
     currentSelection.currentMatchInfo = matchInfo;
-    
-    // Clear old inputs and open premium box
     document.getElementById('playerGameName').value = "";
     document.getElementById('playerGameUID').value = "";
     document.getElementById('joinModal').classList.remove('hidden');
 }
 
-function closeJoinModal() {
-    document.getElementById('joinModal').classList.add('hidden');
-}
+function closeJoinModal() { document.getElementById('joinModal').classList.add('hidden'); }
 
-// Complete form intercept processing submission
 document.getElementById('joinForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
     const gameNameInput = document.getElementById('playerGameName').value.trim();
     const gameUidInput = document.getElementById('playerGameUID').value.trim();
-    
-    closeJoinModal(); // Pop down form early to look fluid
+    closeJoinModal();
 
     const uniqueMatchKey = currentSelection.currentMatchKey;
     const tFee = currentSelection.fee;
@@ -261,7 +275,6 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
     } catch (err) { alert("Error: " + err.message); }
 });
 
-// Authentication Modal Code logic
 document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const inputVal = document.getElementById('authIdentifier').value.trim();
@@ -287,6 +300,5 @@ function toggleAuthMode() {
     document.getElementById('auth-title').innerText = isSignUpMode ? "Signup to SK eSports" : "Login to SK eSports";
     document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
 }
-defineLogoutUser = () => { auth.signOut().then(() => location.reload()); }
 function logoutUser() { auth.signOut().then(() => location.reload()); }
-                                                     
+                                                                   
