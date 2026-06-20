@@ -44,6 +44,25 @@
         </div>
     </div>
 
+    <div id="joinModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <button class="close-modal" onclick="closeJoinModal()">×</button>
+            <h2>Player Registration</h2>
+            <p style="color:#aaa; font-size:13px; margin-bottom:15px; text-align:center;">Tournament entry ke liye apni game details sahi se bharein.</p>
+            <form id="joinForm">
+                <div class="form-group">
+                    <label>In-Game Name (IGN):</label>
+                    <input type="text" id="playerGameName" required placeholder="e.g., SK_GAURAV">
+                </div>
+                <div class="form-group">
+                    <label>Game Character UID:</label>
+                    <input type="text" id="playerGameUID" required placeholder="e.g., 47122226443">
+                </div>
+                <button type="submit" class="submit-btn" style="background:#2ecc71;">Confirm & Join</button>
+            </form>
+        </div>
+    </div>
+
     <main class="container">
 
         <section id="game-selection" class="interface-section active">
@@ -101,7 +120,7 @@
             <div class="success-card">
                 <div class="success-icon">🎉</div>
                 <h1>PARTICIPATED SUCCESSFULLY</h1>
-                <p>Aapka slot entry temporary dynamic registry me safe lock ho chuka hai!</p>
+                <p>Aapka slot entry dynamic registry me safe lock ho chuka hai!</p>
                 <button class="cta-btn" onclick="showSection('game-selection')">Go To Dashboard</button>
             </div>
         </section>
