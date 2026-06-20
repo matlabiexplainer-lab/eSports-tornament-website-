@@ -1,6 +1,9 @@
-// Google Form Configuration (Aapki IDs ke sath)
-const FORM_ID = '1FAIpQLSc1PwlapdeInrpvskjMK0xi2f9QhGPQOkVXZ6uT6yF0uwYTWQ'; 
-const ENTRY_ID = 'entry.72166992'; 
+// Secure Free Database API Configuration (Formspree Real Token Embedded)
+const DATABASE_API_URL = 'https://formspree.io/f/xnjyelpq'; 
+
+// Live Leaderboard Fetch Logic (From Google Sheet)
+const SHEET_ID = '1bHcmgOmFT3z9dtWskTr3PI0cpdorwDEVdDfAYLSonBo'; 
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
 const TOURNAMENT_DATA = {
     "Free Fire MAX": [
@@ -55,32 +58,69 @@ function openRegistrationFlow(tTitle, tFee) {
     showSection('registration-flow');
 }
 
-// 100% Working Submit Method: Isme browser block nahi karega
-document.getElementById('megaForm').addEventListener('submit', function(e) {
+// Submitting JSON data to Formspree API (No CORS Blocks)
+document.getElementById('megaForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const btn = document.getElementById('submitFlowBtn');
     btn.innerText = "Processing & Saving Securely...";
     btn.disabled = true;
 
-    const game = currentSelection.game;
-    const tournament = currentSelection.tournament;
-    const name = document.getElementById('pName').value;
-    const uid = document.getElementById('pUid').value;
-    const phone = document.getElementById('pPhone').value;
+    const payload = {
+        Game: currentSelection.game,
+        Tournament: currentSelection.tournament,
+        PlayerName: document.getElementById('pName').value,
+        CharacterUID: document.getElementById('pUid').value,
+        WhatsApp: document.getElementById('pPhone').value
+    };
 
-    // Saare data ko ek single text line me format karna
-    const combinedData = `Game: ${game} | Tournament: ${tournament} | Player: ${name} | UID: ${uid} | Phone: ${phone}`;
+    try {
+        // Standard REST API call
+        const response = await fetch(DATABASE_API_URL, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
 
-    // Ek hidden image request generator banayein jo background me bina CORS ke form hit karega
-    const beacon = new Image();
-    beacon.src = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse?${ENTRY_ID}=${encodeURIComponent(combinedData)}&submit=Submit`;
-
-    // 1 second baad screen change kar dein
-    setTimeout(() => {
-        showSection('success-screen');
-        document.getElementById('megaForm').reset();
+        if (response.ok) {
+            showSection('success-screen');
+            document.getElementById('megaForm').reset();
+        } else {
+            alert("Database response error. Contact Admin.");
+        }
+    } catch (err) {
+        console.error("Connection failure:", err);
+        alert("Server busy. Please try again.");
+    } finally {
         btn.innerText = "Complete Registration & Pay";
         btn.disabled = false;
-    }, 1200);
+    }
 });
+
+// Live Leaderboard Loader logic
+async function fetchLeaderboard() {
+    try {
+        const response = await fetch(SHEET_URL);
+        const data = await response.text();
+        const rows = data.split('\n').slice(1);
+        const tbody = document.getElementById('leaderboardData');
+        if(tbody) {
+            tbody.innerHTML = ''; 
+            rows.forEach(row => {
+                const columns = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(col => col.replace(/^"|"$/g, '').trim());
+                if (columns.length >= 6 && columns[0] !== "") {
+                    const tr = document.createElement('tr');
+                    const isRankOne = columns[0] === '1' ? 'class="highlight-team"' : '';
+                    tr.innerHTML = `<td>${columns[0]}</td><td ${isRankOne}>${columns[1]}</td><td>${columns[2]}</td><td>${columns[3]}</td><td>${columns[4]}</td><td><strong>${columns[5]}</strong></td>`;
+                    tbody.appendChild(tr);
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Leaderboard loading error:", error);
+    }
+}
+window.addEventListener('DOMContentLoaded', fetchLeaderboard);
