@@ -9,7 +9,6 @@ const firebaseConfig = {
     measurementId: "G-KW6J0GE4TF"
 };
 
-// Non-Blocking Safe Initialization Gateway
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -22,7 +21,7 @@ let currentUserData = null;
 let isSignUpMode = false;
 let currentActiveTab = "upcoming";
 
-// GENERATE SCHEDULE ARRAYS (9:00 AM to 9:00 PM)
+// GENERATE SCHEDULE ARRAYS
 function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
@@ -59,24 +58,25 @@ function getDynamicTournaments() {
     return tournaments;
 }
 
-// Global Real-time Auth Tracker Pipeline
+// Global Auth Engine State Registry
 auth.onAuthStateChanged((user) => {
     const loginBtn = document.getElementById('loginNavBtn');
     const profileHeader = document.getElementById('userProfileHeader');
     if (user) {
         if(loginBtn) loginBtn.classList.add('hidden');
         if(profileHeader) profileHeader.classList.remove('hidden');
-        
         db.collection('users').doc(user.uid).onSnapshot((doc) => {
             if (doc.exists) {
                 currentUserData = doc.data();
                 
                 const coinEl = document.getElementById('user-coins');
                 if(coinEl) coinEl.innerText = currentUserData.coins;
-                
+
+                // Sync Coin Balance with Wallet Popup
                 const modalCoinEl = document.getElementById('modal-user-coins');
                 if(modalCoinEl) modalCoinEl.innerText = currentUserData.coins;
                 
+                // Load historical ledger rows
                 renderWalletHistory();
             }
         });
@@ -87,30 +87,22 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// INSTANT NON-BLOCKING GAME SELECTION CLICK
 function checkAuthAndSelect(gameName) {
-    if (!auth.currentUser) { 
-        openAuthModal(); 
-        return; 
-    }
+    if (!auth.currentUser) { openAuthModal(); return; }
     currentSelection.game = gameName;
-    showSection('tournament-view');
     switchMatchTab('upcoming'); 
 }
 
 function showSection(sectionId) {
     document.querySelectorAll('.interface-section').forEach(s => s.classList.remove('active'));
-    const section = document.getElementById(sectionId);
-    if(section) section.classList.add('active');
+    document.getElementById(sectionId).classList.add('active');
 }
 
 function switchMatchTab(tabName) {
     currentActiveTab = tabName;
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        if(btn) {
-            btn.style.background = 'none';
-            btn.style.color = '#aaa';
-        }
+        btn.style.background = 'none';
+        btn.style.color = '#aaa';
     });
     const activeBtn = document.getElementById(`tab-${tabName}`);
     if(activeBtn) {
@@ -120,12 +112,10 @@ function switchMatchTab(tabName) {
     renderMatchesList();
 }
 
-// RENDERING SYSTEM GRID LOGIC
+// RENDERING LIST LOGIC
 function renderMatchesList() {
     const gameName = currentSelection.game;
-    const titleEl = document.getElementById('selected-game-title');
-    if(titleEl) titleEl.innerText = gameName;
-    
+    document.getElementById('selected-game-title').innerText = gameName;
     const container = document.getElementById('tournaments-container');
     if(!container) return;
     container.innerHTML = "";
@@ -146,7 +136,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Evaluated inside snapshot logic block
+            // Managed inside callback
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -156,7 +146,6 @@ function renderMatchesList() {
         const card = document.createElement('div');
         card.className = "t-card";
         card.id = `card_${uniqueMatchKey}`;
-        
         card.innerHTML = `
             <div class="t-info" onclick="toggleDetailsBox('${t.id}')">
                 <h3>⏰ Time: ${t.time} (${t.mode})</h3>
@@ -233,6 +222,7 @@ function renderMatchesList() {
             const counterEl = document.getElementById(`count_${uniqueMatchKey}`);
             if(counterEl) counterEl.innerText = `👥 Joined: ${joinedCount}/${t.maxSlots}`;
 
+            // --- 15 MIN ROOM TIMING ENGINE ---
             const matchTotalMinutes = (t.hour24 * 60) + t.minNum;
             const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
             const timeDifference = matchTotalMinutes - currentTotalMinutes;
@@ -241,15 +231,14 @@ function renderMatchesList() {
             if(roomContainer) {
                 if (status === "upcoming" && isUserJoined && timeDifference <= 15) {
                     roomContainer.classList.remove('hidden');
-                    const rid = document.getElementById(`roomIdVal-${uniqueMatchKey}`);
-                    const rps = document.getElementById(`roomPassVal-${uniqueMatchKey}`);
-                    if(rid) rid.innerText = databaseRoomId;
-                    if(rps) rps.innerText = databaseRoomPass;
+                    document.getElementById(`roomIdVal-${uniqueMatchKey}`).innerText = databaseRoomId;
+                    document.getElementById(`roomPassVal-${uniqueMatchKey}`).innerText = databaseRoomPass;
                 } else {
                     roomContainer.classList.add('hidden');
                 }
             }
 
+            // --- SECURE PRIVACY LEADERBOARD ENGINE ---
             const resultContainer = document.getElementById(`result-box-${uniqueMatchKey}`);
             const tbodyEl = document.getElementById(`leaderboard-rows-${uniqueMatchKey}`);
             const tableWrapper = document.getElementById(`secure-leaderboard-view-${uniqueMatchKey}`);
@@ -274,6 +263,7 @@ function renderMatchesList() {
                             sortedPlayers.forEach(p => {
                                 let pKills = p.kills !== undefined ? p.kills : "0";
                                 let pPrize = p.prize !== undefined ? p.prize : "0 Coins";
+                                
                                 rowsHtml += `
                                     <tr style="border-bottom: 1px solid #222;">
                                         <td style="padding:6px 4px; font-weight:bold; color:#66fcf1;">${p.gameName || 'Unknown'}</td>
@@ -305,6 +295,8 @@ function renderMatchesList() {
             if(actionContainer) actionContainer.innerHTML = actionBtnHtml;
         });
     });
+
+    showSection('tournament-view');
 }
 
 function toggleDetailsBox(id) {
@@ -312,17 +304,17 @@ function toggleDetailsBox(id) {
     if(el) el.classList.toggle('hidden');
 }
 
+// NEW: CUSTOM MODAL OPEN & CLOSE CONTROLS
 function openWalletModal() {
     if (!auth.currentUser) return;
-    const modal = document.getElementById('walletModal');
-    if(modal) modal.classList.remove('hidden');
+    document.getElementById('walletModal').classList.remove('hidden');
 }
 
 function closeWalletModal() {
-    const modal = document.getElementById('walletModal');
-    if(modal) modal.classList.add('hidden');
+    document.getElementById('walletModal').classList.add('hidden');
 }
 
+// NEW: RENDER ACTIVE PASSBOOK ROWS FROM USER DATA
 function renderWalletHistory() {
     const historyTableBody = document.getElementById('wallet-history-rows');
     if (!historyTableBody) return;
@@ -380,6 +372,7 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
     const userMobile = currentUserData.mobile;
     const newBalance = currentUserData.coins - tFee;
 
+    // Generate local timestamp string for ledger logs
     const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
 
     try {
@@ -394,6 +387,7 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
             })
         }, { merge: true });
 
+        // Update Balance and push a dynamic transaction log securely
         await db.collection('users').doc(userUID).update({ 
             coins: newBalance,
             history: firebase.firestore.FieldValue.arrayUnion({
@@ -423,6 +417,7 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     try {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
+            // Added default empty history array initializing structure on register
             await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
             alert("Registered! Balance: 0 Coins.");
         } else {
@@ -435,5 +430,4 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
 function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
 function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 function toggleAuthMode() {
-    isSignUpMode = !isSignUpMode;
-    document.getElementById('auth-title').inne
+    isSignU
