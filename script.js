@@ -9,7 +9,7 @@ const firebaseConfig = {
     measurementId: "G-KW6J0GE4TF"
 };
 
-// Non-Blocking Safe Initialization Gateway
+// Safe Initialization Gateway
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -22,7 +22,7 @@ let currentUserData = null;
 let isSignUpMode = false;
 let currentActiveTab = "upcoming";
 
-// GENERATE SCHEDULE ARRAYS (9:00 AM to 9:00 PM) - PLURAL NAME FIXED
+// GENERATE SCHEDULE ARRAYS (9:00 AM to 9:00 PM)
 function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
@@ -37,7 +37,7 @@ function getDynamicTournaments() {
             let matchTime = `${displayHour}:${mins} ${ampm}`;
             
             let modeIndex = currentId % 3;
-            let currentMode = modes[modeIndex]; // REPLACED 'nodes' WITH 'modes'
+            let currentMode = modes[modeIndex];
             
             tournaments.push({
                 id: `match_${hour}_${mins}`,
@@ -87,13 +87,15 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// Click Safe Non-Blocking Interceptor
+// INSTANT NON-BLOCKING GAME SELECTION CLICK (Zero Lag Fix)
 function checkAuthAndSelect(gameName) {
     if (!auth.currentUser) { 
         openAuthModal(); 
         return; 
     }
     currentSelection.game = gameName;
+    
+    // UI changes instantly to completely bypass loop freezes
     showSection('tournament-view');
     switchMatchTab('upcoming'); 
 }
@@ -120,7 +122,7 @@ function switchMatchTab(tabName) {
     renderMatchesList();
 }
 
-// RENDERING SYSTEM GRID LOGIC WITH SECURE GATEKEEPERS
+// RENDERING SYSTEM GRID LOGIC
 function renderMatchesList() {
     const gameName = currentSelection.game;
     const titleEl = document.getElementById('selected-game-title');
@@ -146,7 +148,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Managed inside callback
+            // Checked inside callback asynchronously
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -232,7 +234,6 @@ function renderMatchesList() {
             const counterEl = document.getElementById(`count_${uniqueMatchKey}`);
             if(counterEl) counterEl.innerText = `👥 Joined: ${joinedCount}/${t.maxSlots}`;
 
-            // --- 15 MIN ROOM TIMING ENGINE ---
             const matchTotalMinutes = (t.hour24 * 60) + t.minNum;
             const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
             const timeDifference = matchTotalMinutes - currentTotalMinutes;
@@ -250,7 +251,6 @@ function renderMatchesList() {
                 }
             }
 
-            // --- SECURE PRIVACY LEADERBOARD ENGINE ---
             const resultContainer = document.getElementById(`result-box-${uniqueMatchKey}`);
             const tbodyEl = document.getElementById(`leaderboard-rows-${uniqueMatchKey}`);
             const tableWrapper = document.getElementById(`secure-leaderboard-view-${uniqueMatchKey}`);
@@ -264,6 +264,7 @@ function renderMatchesList() {
                         if(tableWrapper) tableWrapper.classList.add('hidden');
                         if(lockWrapper) lockWrapper.classList.remove('hidden');
                     } else {
+                        if(tableWrapper) tableWrapper.substring(0); 
                         if(tableWrapper) tableWrapper.classList.remove('hidden');
                         if(lockWrapper) lockWrapper.classList.add('hidden');
                         
@@ -313,7 +314,6 @@ function toggleDetailsBox(id) {
     if(el) el.classList.toggle('hidden');
 }
 
-// WALLET MODAL CONTROLS & REALTIME PASSBOOK RENDER
 function openWalletModal() {
     if (!auth.currentUser) return;
     const modal = document.getElementById('walletModal');
@@ -369,7 +369,6 @@ function openJoinModal(matchKey, fee, matchInfo) {
 
 function closeJoinModal() { document.getElementById('joinModal').classList.add('hidden'); }
 
-// TRANSACTION ENGINE & SYSTEM WRITE LOGIC
 document.getElementById('joinForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const gameNameInput = document.getElementById('playerGameName').value.trim();
@@ -435,4 +434,5 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     } catch (err) { alert(err.message); }
 });
 
-function openAuthModal() { document.getElemen
+function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
+function closeAuthModal() { document.getElementById('authModal').class
