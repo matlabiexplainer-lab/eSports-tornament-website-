@@ -1,4 +1,4 @@
-// Google Firebase Project Configuration
+// Google Firebase Project Configuration (Live Connected Keys)
 const firebaseConfig = {
     apiKey: "AIzaSyB-C7Ks_lXWWf1RMKUQ8cPuhov5y7ZveXM",
     authDomain: "sk-esports-90bf9.firebaseapp.com",
@@ -19,25 +19,22 @@ const FORMSPREE_URL = 'https://formspree.io/f/xnjyelpq';
 let currentSelection = { game: "", tournamentId: "", fee: 0, title: "" };
 let currentUserData = null;
 let isSignUpMode = false;
+let currentActiveTab = "upcoming";
 
-// 1. DYNAMIC TOURNAMENT GENERATOR (9 AM to 9 PM, every 30 mins)
+// 1. DYNAMIC TOURNAMENT SCHEDULER (9:00 AM to 9:00 PM, Every 30 minutes)
 function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
-    const maps = ["Bermuda Classic", "Erangel Classic"];
-    
     let currentId = 1;
     
-    // Subah 9 baje se raat 9 baje tak loops (Total 24 slots of 30 mins each)
     for (let hour = 9; hour <= 21; hour++) {
         for (let mins of ["00", "30"]) {
-            if (hour === 21 && mins === "30") break; // Raat 9:00 baje aakhiri match setup hai
+            if (hour === 21 && mins === "30") break;
             
             let displayHour = hour > 12 ? hour - 12 : hour;
             let ampm = hour >= 12 ? "PM" : "AM";
             let matchTime = `${displayHour}:${mins} ${ampm}`;
             
-            // Alternating modes and setups logically
             let modeIndex = currentId % 3;
             let currentMode = modes[modeIndex];
             
@@ -51,7 +48,7 @@ function getDynamicTournaments() {
                     top10: currentMode === "Solo" ? "🪙 20 Coins" : "🪙 40 Coins",
                     winner: currentMode === "Solo" ? "🪙 100 Coins" : (currentMode === "Duo" ? "🪙 200 Coins" : "🪙 400 Coins")
                 },
-                maxSlots: currentMode === "Solo" ? 50 : (currentMode === "Duo" ? 50 : 25) // 25 Teams for squad
+                maxSlots: currentMode === "Solo" ? 50 : (currentMode === "Duo" ? 50 : 25)
             });
             currentId++;
         }
@@ -59,7 +56,24 @@ function getDynamicTournaments() {
     return tournaments;
 }
 
-// Session Monitor
+// Tab Switching System Layout handler
+function switchMatchTab(tabName) {
+    currentActiveTab = tabName;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.style.background = 'none';
+        btn.style.color = '#aaa';
+    });
+    const activeBtn = document.getElementById(`tab-${tabName}`);
+    if(activeBtn) {
+        activeBtn.style.background = '#ff4655';
+        activeBtn.style.color = '#fff';
+    }
+    if(currentSelection.game) {
+        selectGame(currentSelection.game);
+    }
+}
+
+// User Session State Monitor
 auth.onAuthStateChanged(async (user) => {
     const loginBtn = document.getElementById('loginNavBtn');
     const profileHeader = document.getElementById('userProfileHeader');
@@ -98,17 +112,17 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
             await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0 });
-            alert("Registered successfully! Wallet: 0 Coins.");
+            alert("Registered successfully! Default: 0 Coins.");
         } else {
             await auth.signInWithEmailAndPassword(dynamicEmail, pass);
         }
         closeAuthModal();
-    } catch (err) { alert("Error: " + err.message); }
+    } catch (err) { alert("Authentication Error: " + err.message); }
 });
 
 function logoutUser() { auth.signOut().then(() => location.reload()); }
 function checkAuthAndSelect(gameName) {
-    if (!auth.currentUser) { alert("Please Login first!"); openAuthModal(); return; }
+    if (!auth.currentUser) { alert("Please Login/Signup to explore matches!"); openAuthModal(); return; }
     selectGame(gameName);
 }
 
@@ -118,52 +132,99 @@ function showSection(sectionId) {
     if(targeted) targeted.classList.add('active');
 }
 
-// 2. RENDER MATCHES & REAL-TIME JOINED COUNTERS
+// 2. RENDER MATCH CARDS WITH LIVE TIMER & LIVE FIREBASE USER COUNT
 function selectGame(gameName) {
     currentSelection.game = gameName;
-    document.getElementById('selected-game-title').innerText = `${gameName} - Live Schedule`;
+    document.getElementById('selected-game-title').innerText = `${gameName}`;
     const container = document.getElementById('tournaments-container');
     if(!container) return;
     container.innerHTML = "";
     
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMin = now.getMinutes();
+    
     const activeMatches = getDynamicTournaments();
     const mapName = gameName === "Free Fire MAX" ? "Bermuda Classic" : "Erangel Classic";
-    
+
     activeMatches.forEach(t => {
-        const uniqueMatchKey = `${gameName.replace(/\s+/g, '')}_${t.id}`;
-        const card = document.createElement('div');
-        card.className = "t-card";
-        card.style.cursor = "pointer";
+        const parts = t.id.split('_');
+        const matchHour = parseInt(parts[1]);
+        const matchMin = parseInt(parts[2]);
         
-        // Real-time counter fetch from Firestore
+        let status = "upcoming"; 
+        
+        if (matchHour < currentHour || (matchHour === currentHour && matchMin + 30 <= currentMin)) {
+            status = "past";
+        } else if (matchHour === currentHour && currentMin >= matchMin && currentMin < matchMin + 30) {
+            status = "live";
+        }
+
+        const uniqueMatchKey = `${gameName.replace(/\s+/g, '')}_${t.id}`;
+        
         db.collection('tournaments').doc(uniqueMatchKey).onSnapshot((doc) => {
             let joinedCount = 0;
+            let isUserJoined = false;
+            
             if(doc.exists && doc.data().players) {
-                joinedCount = doc.data().players.length;
+                const plist = doc.data().players;
+                joinedCount = plist.length;
+                if(auth.currentUser) {
+                    isUserJoined = plist.some(p => p.uid === auth.currentUser.uid);
+                }
             }
             
+            let shouldRender = false;
+            if (currentActiveTab === status) {
+                shouldRender = true;
+            } else if (currentActiveTab === "my_joined" && isUserJoined) {
+                shouldRender = true;
+            }
+
+            if (!shouldRender) {
+                const existingCard = document.getElementById(`card_${uniqueMatchKey}`);
+                if(existingCard) existingCard.remove();
+                return;
+            }
+
+            let actionButton = "";
+            if (status === "past") {
+                actionButton = `<button class="join-btn" style="background:#444; color:#888;" disabled>Match Ended</button>`;
+            } else if (status === "live") {
+                actionButton = `<button class="join-btn" style="background:#e74c3c; animation: pulse 1.5s infinite;" disabled>🔴 Live Now</button>`;
+            } else if (isUserJoined) {
+                actionButton = `<button class="join-btn" style="background:#2ecc71; color:#fff;" disabled>Joined ✓</button>`;
+            } else {
+                actionButton = `<button class="join-btn" onclick="processParticipation('${uniqueMatchKey}', ${t.fee}, '${t.time} ${t.mode}')">Join Match</button>`;
+            }
+
+            const cardId = `card_${uniqueMatchKey}`;
+            let card = document.getElementById(cardId);
+            if(!card) {
+                card = document.createElement('div');
+                card.id = cardId;
+                card.className = "t-card";
+                container.appendChild(card);
+            }
+
             card.innerHTML = `
                 <div class="t-info" onclick="toggleDetailsBox('${t.id}')">
                     <h3>⏰ Time: ${t.time} (${t.mode})</h3>
-                    <p style="font-size:12px; color:#aaa; margin:4px 0;">🗺️ Map: ${mapName} | Click for Rewards Breakdown</p>
+                    <p style="font-size:12px; color:#aaa; margin:4px 0;">🗺️ Map: ${mapName} | Tap to view prize details</p>
                     <div class="t-details">
                         <span>🪙 Entry: ${t.fee} Coins</span>
-                        <span style="color:#66fcf1;">👥 Joined: ${joinedCount}/${t.maxSlots}</span>
+                        <span style="color:#66fcf1; font-weight:bold;">👥 Registered: ${joinedCount}/${t.maxSlots}</span>
                     </div>
-                    <!-- REWARDS HIDDEN BREAKDOWN PANEL -->
-                    <div id="details-${t.id}" class="hidden" style="background:#111; padding:10px; border-radius:4px; margin-top:10px; border-left:3px solid #ff4655; text-align:left;">
-                        <p style="margin:2px 0; font-size:13px;">🎯 Booyah/Chicken Dinner: <strong>${t.rewards.winner}</strong></p>
-                        <p style="margin:2px 0; font-size:13px;">🎖️ Top 10 Finishers: <strong>${t.rewards.top10}</strong></p>
-                        <p style="margin:2px 0; font-size:13px;">💀 Per Kill Reward: <strong>${t.rewards.perKill}</strong></p>
+                    <div id="details-${t.id}" class="hidden" style="background:#0d1117; padding:12px; border-radius:6px; margin-top:10px; border-left:3px solid #ff4655; text-align:left;">
+                        <p style="margin:4px 0; font-size:13px; color:#fff;">🎯 1st Rank (Winner): <strong style="color:#2ecc71;">${t.rewards.winner}</strong></p>
+                        <p style="margin:4px 0; font-size:13px; color:#fff;">🎖️ Top 10 Finishers: <strong style="color:#f1c40f;">${t.rewards.top10}</strong></p>
+                        <p style="margin:4px 0; font-size:13px; color:#fff;">💀 Per Kill Reward: <strong style="color:#e74c3c;">${t.rewards.perKill}</strong></p>
                     </div>
                 </div>
-                <button class="join-btn" onclick="processParticipation('${uniqueMatchKey}', ${t.fee}, '${t.time} ${t.mode}')">Join Match</button>
+                ${actionButton}
             `;
         });
-        
-        container.appendChild(card);
     });
-    showSection('tournament-view');
 }
 
 function toggleDetailsBox(id) {
@@ -171,7 +232,7 @@ function toggleDetailsBox(id) {
     if(el) el.classList.toggle('hidden');
 }
 
-// 3. SECURE JOINING ENGINE WITH FIREBASE ARRAYS
+// 3. TRANSACTION ENGINE: ATOMIC REGISTRATION AND DEDUCTIONS
 async function processParticipation(uniqueMatchKey, tFee, matchInfo) {
     if (!currentUserData) return;
     if (currentUserData.coins < tFee) { showSection('wallet-topup'); return; }
@@ -181,21 +242,18 @@ async function processParticipation(uniqueMatchKey, tFee, matchInfo) {
     const newBalance = currentUserData.coins - tFee;
 
     try {
-        // Atomic push player into the match array registry
         await db.collection('tournaments').doc(uniqueMatchKey).set({
             players: firebase.firestore.FieldValue.arrayUnion({ uid: userUID, mobile: userMobile })
         }, { merge: true });
 
-        // Debit User Balance
         await db.collection('users').doc(userUID).update({ coins: newBalance });
         
-        // Backup Logs to Formspree
         await fetch(FORMSPREE_URL, {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Status: "MATCH_JOINED", Mobile: userMobile, Details: matchInfo, MatchKey: uniqueMatchKey })
+            body: JSON.stringify({ Status: "REGISTRATION_LOCKED", Game: currentSelection.game, Mobile: userMobile, Match: matchInfo })
         });
 
         showSection('success-screen');
-    } catch (err) { alert("Error joining tournament: " + err.message); }
+    } catch (err) { alert("Error: " + err.message); }
 }
