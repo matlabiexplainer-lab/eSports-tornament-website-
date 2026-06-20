@@ -104,7 +104,7 @@ function switchMatchTab(tabName) {
     renderMatchesList();
 }
 
-// RENDERING LIST LOGIC WITH 15-MIN LOCK TIME GATEKEEPER
+// RENDERING LIST LOGIC
 function renderMatchesList() {
     const gameName = currentSelection.game;
     document.getElementById('selected-game-title').innerText = gameName;
@@ -128,7 +128,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Managed later inside callback
+            // Managed inside callback
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -147,11 +147,30 @@ function renderMatchesList() {
                     <span id="count_${uniqueMatchKey}" style="color:#66fcf1;">👥 Joined: Loading...</span>
                 </div>
                 
-                <!-- Room Info Module Container (Locked by Time Engine) -->
+                <!-- Room Info Module Container -->
                 <div id="room-box-${uniqueMatchKey}" class="hidden" style="background:#1e2736; padding:12px; border-radius:6px; margin-top:10px; border:1px dashed #66fcf1; color:#fff; text-align:left;">
                     <h4 style="margin:0 0 5px 0; color:#66fcf1; font-size:14px;">🔑 Official Room Details:</h4>
                     <p style="margin:3px 0; font-size:13px;">Room ID: <span id="roomIdVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
                     <p style="margin:3px 0; font-size:13px;">Password: <span id="roomPassVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
+                </div>
+
+                <!-- FIXED: ALL PLAYER LEADERBOARD (ONLY NAME, KILLS, PRIZE) -->
+                <div id="result-box-${uniqueMatchKey}" class="hidden" style="background:#111a24; padding:12px; border-radius:6px; margin-top:10px; border:1px solid #2ecc71; color:#fff; text-align:left;">
+                    <h4 style="margin:0 0 8px 0; color:#2ecc71; font-size:14px;">🏆 Full Match Leaderboard / Results:</h4>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
+                            <thead>
+                                <tr style="border-bottom:2px solid #2ecc71; color:#aaa;">
+                                    <th style="padding:4px;">Player (IGN)</th>
+                                    <th style="padding:4px;">Kills</th>
+                                    <th style="padding:4px;">Prize</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-rows-${uniqueMatchKey}">
+                                <tr><td colspan="3" style="padding:6px; color:#aaa;">Result processing...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div id="details-${t.id}" class="hidden" style="background:#0d1117; padding:10px; border-radius:6px; margin-top:10px; border-left:3px solid #ff4655;">
@@ -169,14 +188,15 @@ function renderMatchesList() {
             let isUserJoined = false;
             let databaseRoomId = "Awaiting Admin...";
             let databaseRoomPass = "Awaiting Admin...";
+            let playerList = [];
             
             if(doc.exists) {
                 const docData = doc.data();
                 if(docData.players) {
-                    const plist = docData.players;
-                    joinedCount = plist.length;
+                    playerList = docData.players;
+                    joinedCount = playerList.length;
                     if(auth.currentUser) {
-                        isUserJoined = plist.some(p => p.uid === auth.currentUser.uid);
+                        isUserJoined = playerList.some(p => p.uid === auth.currentUser.uid);
                     }
                 }
                 if(docData.roomId) databaseRoomId = docData.roomId;
@@ -188,23 +208,59 @@ function renderMatchesList() {
                 return;
             }
 
-            const counterEl = document.getElementById(`count_${uniqueMatchKey}`);
+            const counterEl = document.getElementById:// count_...
+            `count_${uniqueMatchKey}`;
             if(counterEl) counterEl.innerText = `👥 Joined: ${joinedCount}/${t.maxSlots}`;
 
-            // --- 15 MIN ENGINE LOGIC ---
+            // --- 15 MIN ROOM TIMING ENGINE ---
             const matchTotalMinutes = (t.hour24 * 60) + t.minNum;
             const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
             const timeDifference = matchTotalMinutes - currentTotalMinutes;
 
             const roomContainer = document.getElementById(`room-box-${uniqueMatchKey}`);
             if(roomContainer) {
-                // Khulega tabhi jab user joined ho AUR match start hone me 15 mins ya kam bache ho (ya live chal raha ho)
-                if (isUserJoined && (timeDifference <= 15 || status === "live")) {
+                if (status === "upcoming" && isUserJoined && timeDifference <= 15) {
                     roomContainer.classList.remove('hidden');
                     document.getElementById(`roomIdVal-${uniqueMatchKey}`).innerText = databaseRoomId;
                     document.getElementById(`roomPassVal-${uniqueMatchKey}`).innerText = databaseRoomPass;
                 } else {
                     roomContainer.classList.add('hidden');
+                }
+            }
+
+            // --- GENERATE CLEAN LEADERBOARD (ONLY NAME, KILL, PRIZE) ---
+            const resultContainer = document.getElementById(`result-box-${uniqueMatchKey}`);
+            const tbodyEl = document.getElementById(`leaderboard-rows-${uniqueMatchKey}`);
+            
+            if(resultContainer && tbodyEl) {
+                if (status === "past") {
+                    resultContainer.classList.remove('hidden');
+                    
+                    if(playerList.length === 0) {
+                        tbodyEl.innerHTML = `<tr><td colspan="3" style="padding:6px; color:#aaa;">No one joined this match.</td></tr>`;
+                    } else {
+                        // Kills sorting (Highest first)
+                        let sortedPlayers = [...playerList].sort((a, b) => {
+                            return (parseInt(b.kills || 0)) - (parseInt(a.kills || 0));
+                        });
+
+                        let rowsHtml = "";
+                        sortedPlayers.forEach(p => {
+                            let pKills = p.kills !== undefined ? p.kills : "0";
+                            let pPrize = p.prize !== undefined ? p.prize : "0 Coins";
+                            
+                            rowsHtml += `
+                                <tr style="border-bottom: 1px solid #222;">
+                                    <td style="padding:6px 4px; font-weight:bold; color:#66fcf1;">${p.gameName || 'Unknown'}</td>
+                                    <td style="padding:6px 4px; color:#fff;">💀 ${pKills}</td>
+                                    <td style="padding:6px 4px; color:#2ecc71; font-weight:bold;">${pPrize}</td>
+                                </tr>
+                            `;
+                        });
+                        tbodyEl.innerHTML = rowsHtml;
+                    }
+                } else {
+                    resultContainer.classList.add('hidden');
                 }
             }
 
@@ -264,7 +320,9 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
                 uid: userUID, 
                 mobile: userMobile,
                 gameName: gameNameInput,
-                gameUID: gameUidInput
+                gameUID: gameUidInput,
+                kills: 0,
+                prize: "0 Coins"
             })
         }, { merge: true });
 
