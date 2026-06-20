@@ -154,22 +154,28 @@ function renderMatchesList() {
                     <p style="margin:3px 0; font-size:13px;">Password: <span id="roomPassVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
                 </div>
 
-                <!-- ALL PLAYER LEADERBOARD (ONLY NAME, KILLS, PRIZE) -->
+                <!-- ALL PLAYER LEADERBOARD (SECURE ACCESS GATE) -->
                 <div id="result-box-${uniqueMatchKey}" class="hidden" style="background:#111a24; padding:12px; border-radius:6px; margin-top:10px; border:1px solid #2ecc71; color:#fff; text-align:left;">
                     <h4 style="margin:0 0 8px 0; color:#2ecc71; font-size:14px;">🏆 Full Match Leaderboard / Results:</h4>
-                    <div style="overflow-x:auto;">
-                        <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
-                            <thead>
-                                <tr style="border-bottom:2px solid #2ecc71; color:#aaa;">
-                                    <th style="padding:4px;">Player (IGN)</th>
-                                    <th style="padding:4px;">Kills</th>
-                                    <th style="padding:4px;">Prize</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-rows-${uniqueMatchKey}">
-                                <tr><td colspan="3" style="padding:6px; color:#aaa;">Result processing...</td></tr>
-                            </tbody>
-                        </table>
+                    <div id="secure-leaderboard-view-${uniqueMatchKey}">
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid #2ecc71; color:#aaa;">
+                                        <th style="padding:4px;">Player (IGN)</th>
+                                        <th style="padding:4px;">Kills</th>
+                                        <th style="padding:4px;">Prize</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard-rows-${uniqueMatchKey}">
+                                    <tr><td colspan="3" style="padding:6px; color:#aaa;">Result processing...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Privacy blocker tag -->
+                    <div id="secure-leaderboard-lock-${uniqueMatchKey}" class="hidden" style="padding:4px 0; color:#ff4655; font-size:13px; font-weight:bold;">
+                        🔒 Results Locked! Only players who participated in this match can view the scorecard.
                     </div>
                 </div>
 
@@ -227,36 +233,47 @@ function renderMatchesList() {
                 }
             }
 
-            // --- GENERATE CLEAN LEADERBOARD (ONLY NAME, KILL, PRIZE) ---
+            // --- SECURE PRIVACY LEADERBOARD ENGINE ---
             const resultContainer = document.getElementById(`result-box-${uniqueMatchKey}`);
             const tbodyEl = document.getElementById(`leaderboard-rows-${uniqueMatchKey}`);
+            const tableWrapper = document.getElementById(`secure-leaderboard-view-${uniqueMatchKey}`);
+            const lockWrapper = document.getElementById(`secure-leaderboard-lock-${uniqueMatchKey}`);
             
             if(resultContainer && tbodyEl) {
                 if (status === "past") {
                     resultContainer.classList.remove('hidden');
                     
-                    if(playerList.length === 0) {
-                        tbodyEl.innerHTML = `<tr><td colspan="3" style="padding:6px; color:#aaa;">No one joined this match.</td></tr>`;
+                    // SECURITY LOCK: Check user participation logic registry
+                    if (!isUserJoined) {
+                        if(tableWrapper) tableWrapper.classList.add('hidden');
+                        if(lockWrapper) lockWrapper.classList.remove('hidden');
                     } else {
-                        // Kills sorting (Highest first)
-                        let sortedPlayers = [...playerList].sort((a, b) => {
-                            return (parseInt(b.kills || 0)) - (parseInt(a.kills || 0));
-                        });
+                        if(tableWrapper) tableWrapper.classList.remove('hidden');
+                        if(lockWrapper) lockWrapper.classList.add('hidden');
+                        
+                        if(playerList.length === 0) {
+                            tbodyEl.innerHTML = `<tr><td colspan="3" style="padding:6px; color:#aaa;">No one joined this match.</td></tr>`;
+                        } else {
+                            // Sort by kills descending
+                            let sortedPlayers = [...playerList].sort((a, b) => {
+                                return (parseInt(b.kills || 0)) - (parseInt(a.kills || 0));
+                            });
 
-                        let rowsHtml = "";
-                        sortedPlayers.forEach(p => {
-                            let pKills = p.kills !== undefined ? p.kills : "0";
-                            let pPrize = p.prize !== undefined ? p.prize : "0 Coins";
-                            
-                            rowsHtml += `
-                                <tr style="border-bottom: 1px solid #222;">
-                                    <td style="padding:6px 4px; font-weight:bold; color:#66fcf1;">${p.gameName || 'Unknown'}</td>
-                                    <td style="padding:6px 4px; color:#fff;">💀 ${pKills}</td>
-                                    <td style="padding:6px 4px; color:#2ecc71; font-weight:bold;">${pPrize}</td>
-                                </tr>
-                            `;
-                        });
-                        tbodyEl.innerHTML = rowsHtml;
+                            let rowsHtml = "";
+                            sortedPlayers.forEach(p => {
+                                let pKills = p.kills !== undefined ? p.kills : "0";
+                                let pPrize = p.prize !== undefined ? p.prize : "0 Coins";
+                                
+                                rowsHtml += `
+                                    <tr style="border-bottom: 1px solid #222;">
+                                        <td style="padding:6px 4px; font-weight:bold; color:#66fcf1;">${p.gameName || 'Unknown'}</td>
+                                        <td style="padding:6px 4px; color:#fff;">💀 ${pKills}</td>
+                                        <td style="padding:6px 4px; color:#2ecc71; font-weight:bold;">${pPrize}</td>
+                                    </tr>
+                                `;
+                            });
+                            tbodyEl.innerHTML = rowsHtml;
+                        }
                     }
                 } else {
                     resultContainer.classList.add('hidden');
