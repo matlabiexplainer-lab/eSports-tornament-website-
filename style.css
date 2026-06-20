@@ -119,3 +119,59 @@ nav a { color: #fff; text-decoration: none; margin-left: 20px; }
     .game-card { display: block; width: 100%; margin-bottom: 20px; height: 180px; }
     .t-card { flex-direction: column; text-align: center; gap: 20px; }
 }
+/* Wallet and Auth Header */
+#userProfileHeader {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#header-wallet {
+    background: #0b0c10;
+    padding: 8px 15px;
+    border-radius: 20px;
+    color: #66fcf1;
+    font-weight: bold;
+    border: 1px solid #66fcf1;
+}
+
+.auth-btn, .logout-btn {
+    background: #ff4655;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.logout-btn { background: #555; }
+
+/* Modal Overlay Design */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000;
+}
+
+.modal-card {
+    background: #1f2833;
+    padding: 40px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    border: 1px solid #66fcf1;
+    text-align: center;
+}
+
+.close-modal {
+    position: absolute; top: 10px; right: 15px;
+    background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;
+}
+
+.toggle-auth-text { margin-top: 20px; font-size: 14px; }
+.toggle-auth-text a { color: #66fcf1; text-decoration: none; }
+.hidden { display: none !important; }
