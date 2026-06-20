@@ -1,4 +1,4 @@
-// Google Firebase App Authentication Live Client Matrix
+// Google Firebase App Configuration Matrix
 const firebaseConfig = {
     apiKey: "AIzaSyB-C7Ks_lXWWf1RMKUQ8cPuhov5y7ZveXM",
     authDomain: "sk-esports-90bf9.firebaseapp.com",
@@ -16,12 +16,12 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const FORMSPREE_URL = 'https://formspree.io/f/xnjyelpq'; 
 
-let currentSelection = { game: "", fee: 0, title: "" };
+let currentSelection = { game: "", fee: 0, title: "", currentMatchKey: "", currentMatchInfo: "" };
 let currentUserData = null;
 let isSignUpMode = false;
 let currentActiveTab = "upcoming";
 
-// 1. GENERATE STATIC ARRAYS TO PREVENT FIRESTORE CALL FREEZE ON CLICK
+// 1. GENERATE SCHEDULE ARRAYS
 function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
@@ -79,14 +79,13 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// Click Safe Interceptor Gate
 function checkAuthAndSelect(gameName) {
     if (!auth.currentUser) { 
         openAuthModal(); 
         return; 
     }
     currentSelection.game = gameName;
-    switchMatchTab('upcoming'); // Click standard setup trigger
+    switchMatchTab('upcoming'); 
 }
 
 function showSection(sectionId) {
@@ -94,7 +93,6 @@ function showSection(sectionId) {
     document.getElementById(sectionId).classList.add('active');
 }
 
-// Tabs UI Layout Filter Shuffler
 function switchMatchTab(tabName) {
     currentActiveTab = tabName;
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -109,7 +107,7 @@ function switchMatchTab(tabName) {
     renderMatchesList();
 }
 
-// 2. MAIN CORES: STABLE RENDER LIST ENGINE WITHOUT LOOPS
+// 2. RENDERING LIST LOGIC
 function renderMatchesList() {
     const gameName = currentSelection.game;
     document.getElementById('selected-game-title').innerText = gameName;
@@ -132,16 +130,14 @@ function renderMatchesList() {
             status = "live";
         }
 
-        // System rendering matrix check
         if (currentActiveTab === "my_joined") {
-            // Checked asynchronously, skips basic rules grid if tab is profile index
+            // Asynchronous flow skip
         } else if (currentActiveTab !== status) {
             return; 
         }
 
         const uniqueMatchKey = `${gameName.replace(/\s+/g, '')}_${t.id}`;
         
-        // Dynamic Node Element Appender Creation
         const card = document.createElement('div');
         card.className = "t-card";
         card.id = `card_${uniqueMatchKey}`;
@@ -163,7 +159,6 @@ function renderMatchesList() {
         `;
         container.appendChild(card);
 
-        // Fetch Live Counter data asynchronously after structural render nodes complete
         db.collection('tournaments').doc(uniqueMatchKey).onSnapshot((doc) => {
             let joinedCount = 0;
             let isUserJoined = false;
@@ -176,7 +171,6 @@ function renderMatchesList() {
                 }
             }
 
-            // Clean layout if profile index array state changes
             if (currentActiveTab === "my_joined" && !isUserJoined) {
                 card.remove();
                 return;
@@ -193,13 +187,11 @@ function renderMatchesList() {
             } else if (isUserJoined) {
                 actionBtnHtml = `<button class="join-btn" style="background:#2ecc71;" disabled>Joined ✓</button>`;
             } else {
-                actionBtnHtml = `<button class="join-btn" onclick="processParticipation('${uniqueMatchKey}', ${t.fee}, '${t.time} ${t.mode}')">Join Match</button>`;
+                actionBtnHtml = `<button class="join-btn" onclick="openJoinModal('${uniqueMatchKey}', ${t.fee}, '${t.time} ${t.mode}')">Join Match</button>`;
             }
 
             const actionContainer = document.getElementById(`action_${uniqueMatchKey}`);
             if(actionContainer) actionContainer.innerHTML = actionBtnHtml;
-        }, (err) => {
-            // Safe silent error management bypass rules
         });
     });
 
@@ -211,17 +203,38 @@ function toggleDetailsBox(id) {
     if(el) el.classList.toggle('hidden');
 }
 
-// 3. SECURE ACTION ENGINE: COLLECTS CHARACTER IGN & UID
-async function processParticipation(uniqueMatchKey, tFee, matchInfo) {
+// 3. CUSTOM POPUP FORM HOOKS SYSTEM
+function openJoinModal(matchKey, fee, matchInfo) {
     if (!currentUserData) return;
-    if (currentUserData.coins < tFee) { showSection('wallet-topup'); return; }
+    if (currentUserData.coins < fee) { showSection('wallet-topup'); return; }
+    
+    // Save selections globally for the current transaction
+    currentSelection.currentMatchKey = matchKey;
+    currentSelection.fee = fee;
+    currentSelection.currentMatchInfo = matchInfo;
+    
+    // Clear old inputs and open premium box
+    document.getElementById('playerGameName').value = "";
+    document.getElementById('playerGameUID').value = "";
+    document.getElementById('joinModal').classList.remove('hidden');
+}
 
-    const gameNameInput = prompt("Apna In-Game Name (IGN) enter karein:");
-    if (!gameNameInput || gameNameInput.trim() === "") { alert("Cancelled! Name missing."); return; }
+function closeJoinModal() {
+    document.getElementById('joinModal').classList.add('hidden');
+}
 
-    const gameUidInput = prompt("Apni Game Character UID enter karein:");
-    if (!gameUidInput || gameUidInput.trim() === "") { alert("Cancelled! UID missing."); return; }
+// Complete form intercept processing submission
+document.getElementById('joinForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const gameNameInput = document.getElementById('playerGameName').value.trim();
+    const gameUidInput = document.getElementById('playerGameUID').value.trim();
+    
+    closeJoinModal(); // Pop down form early to look fluid
 
+    const uniqueMatchKey = currentSelection.currentMatchKey;
+    const tFee = currentSelection.fee;
+    const matchInfo = currentSelection.currentMatchInfo;
     const userUID = auth.currentUser.uid;
     const userMobile = currentUserData.mobile;
     const newBalance = currentUserData.coins - tFee;
@@ -231,8 +244,8 @@ async function processParticipation(uniqueMatchKey, tFee, matchInfo) {
             players: firebase.firestore.FieldValue.arrayUnion({ 
                 uid: userUID, 
                 mobile: userMobile,
-                gameName: gameNameInput.trim(),
-                gameUID: gameUidInput.trim()
+                gameName: gameNameInput,
+                gameUID: gameUidInput
             })
         }, { merge: true });
 
@@ -246,9 +259,9 @@ async function processParticipation(uniqueMatchKey, tFee, matchInfo) {
 
         showSection('success-screen');
     } catch (err) { alert("Error: " + err.message); }
-}
+});
 
-// Form Handlers
+// Authentication Modal Code logic
 document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const inputVal = document.getElementById('authIdentifier').value.trim();
@@ -274,5 +287,6 @@ function toggleAuthMode() {
     document.getElementById('auth-title').innerText = isSignUpMode ? "Signup to SK eSports" : "Login to SK eSports";
     document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
 }
+defineLogoutUser = () => { auth.signOut().then(() => location.reload()); }
 function logoutUser() { auth.signOut().then(() => location.reload()); }
-
+                                                     
