@@ -68,15 +68,8 @@ auth.onAuthStateChanged((user) => {
         db.collection('users').doc(user.uid).onSnapshot((doc) => {
             if (doc.exists) {
                 currentUserData = doc.data();
-                
                 const coinEl = document.getElementById('user-coins');
                 if(coinEl) coinEl.innerText = currentUserData.coins;
-
-                // Sync Wallet Popup balance elements
-                const modalCoinEl = document.getElementById('modal-user-coins');
-                if(modalCoinEl) modalCoinEl.innerText = currentUserData.coins;
-                
-                renderWalletHistory();
             }
         });
     } else {
@@ -86,20 +79,15 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// FIXED: INSTANT NON-BLOCKING ROUTER (Zero Lag Click Gateway)
 function checkAuthAndSelect(gameName) {
     if (!auth.currentUser) { openAuthModal(); return; }
     currentSelection.game = gameName;
-    
-    // UI section updates immediately before script loads table elements
-    showSection('tournament-view');
     switchMatchTab('upcoming'); 
 }
 
 function showSection(sectionId) {
     document.querySelectorAll('.interface-section').forEach(s => s.classList.remove('active'));
-    const targetSection = document.getElementById(sectionId);
-    if(targetSection) targetSection.classList.add('active');
+    document.getElementById(sectionId).classList.add('active');
 }
 
 function switchMatchTab(tabName) {
@@ -119,9 +107,7 @@ function switchMatchTab(tabName) {
 // RENDERING LIST LOGIC
 function renderMatchesList() {
     const gameName = currentSelection.game;
-    const titleEl = document.getElementById('selected-game-title');
-    if(titleEl) titleEl.innerText = gameName;
-    
+    document.getElementById('selected-game-title').innerText = gameName;
     const container = document.getElementById('tournaments-container');
     if(!container) return;
     container.innerHTML = "";
@@ -142,7 +128,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Evaluated via callbacks asynchronously
+            // Managed inside callback
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -254,6 +240,7 @@ function renderMatchesList() {
                 if (status === "past") {
                     resultContainer.classList.remove('hidden');
                     
+                    // SECURITY LOCK: Check user participation logic registry
                     if (!isUserJoined) {
                         if(tableWrapper) tableWrapper.classList.add('hidden');
                         if(lockWrapper) lockWrapper.classList.remove('hidden');
@@ -264,7 +251,11 @@ function renderMatchesList() {
                         if(playerList.length === 0) {
                             tbodyEl.innerHTML = `<tr><td colspan="3" style="padding:6px; color:#aaa;">No one joined this match.</td></tr>`;
                         } else {
-                            let sortedPlayers = [...playerList].sort((a, b) => (parseInt(b.kills || 0)) - (parseInt(a.kills || 0)));
+                            // Sort by kills descending
+                            let sortedPlayers = [...playerList].sort((a, b) => {
+                                return (parseInt(b.kills || 0)) - (parseInt(a.kills || 0));
+                            });
+
                             let rowsHtml = "";
                             sortedPlayers.forEach(p => {
                                 let pKills = p.kills !== undefined ? p.kills : "0";
@@ -301,51 +292,13 @@ function renderMatchesList() {
             if(actionContainer) actionContainer.innerHTML = actionBtnHtml;
         });
     });
+
+    showSection('tournament-view');
 }
 
 function toggleDetailsBox(id) {
     const el = document.getElementById(`details-${id}`);
     if(el) el.classList.toggle('hidden');
-}
-
-function openWalletModal() {
-    if (!auth.currentUser) return;
-    document.getElementById('walletModal').classList.remove('hidden');
-}
-
-function closeWalletModal() {
-    document.getElementById('walletModal').classList.add('hidden');
-}
-
-function renderWalletHistory() {
-    const historyTableBody = document.getElementById('wallet-history-rows');
-    if (!historyTableBody) return;
-    
-    if (!currentUserData || !currentUserData.history || currentUserData.history.length === 0) {
-        historyTableBody.innerHTML = `<tr><td colspan="2" style="padding: 10px; color: #aaa; text-align: center;">No transaction history found.</td></tr>`;
-        return;
-    }
-
-    let rowsHtml = "";
-    let reversedHistory = [...currentUserData.history].reverse();
-    
-    reversedHistory.forEach(tx => {
-        let typeColor = tx.type === "Deposit" || tx.type === "Won" ? "#2ecc71" : "#ff4655";
-        let prefix = tx.type === "Deposit" || tx.type === "Won" ? "+" : "-";
-        
-        rowsHtml += `
-            <tr style="border-bottom: 1px solid #1c232d;">
-                <td style="padding: 8px 4px;">
-                    <div style="font-weight: bold; color: #fff;">${tx.title || 'Game Entry'}</div>
-                    <div style="font-size: 10px; color: #666;">${tx.date || ''}</div>
-                </td>
-                <td style="padding: 8px 4px; text-align: right; font-weight: bold; color: ${typeColor};">
-                    ${prefix}🪙${tx.amount}
-                </td>
-            </tr>
-        `;
-    });
-    historyTableBody.innerHTML = rowsHtml;
 }
 
 function openJoinModal(matchKey, fee, matchInfo) {
@@ -374,8 +327,6 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
     const userMobile = currentUserData.mobile;
     const newBalance = currentUserData.coins - tFee;
 
-    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
-
     try {
         await db.collection('tournaments').doc(uniqueMatchKey).set({
             players: firebase.firestore.FieldValue.arrayUnion({ 
@@ -388,15 +339,7 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
             })
         }, { merge: true });
 
-        await db.collection('users').doc(userUID).update({ 
-            coins: newBalance,
-            history: firebase.firestore.FieldValue.arrayUnion({
-                title: `${currentSelection.game} (${matchInfo})`,
-                amount: tFee,
-                type: "Debited",
-                date: txDate
-            })
-        });
+        await db.collection('users').doc(userUID).update({ coins: newBalance });
         
         await fetch(FORMSPREE_URL, {
             method: 'POST',
@@ -417,7 +360,7 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     try {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
-            await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
+            await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0 });
             alert("Registered! Balance: 0 Coins.");
         } else {
             await auth.signInWithEmailAndPassword(dynamicEmail, pass);
@@ -430,4 +373,8 @@ function openAuthModal() { document.getElementById('authModal').classList.remove
 function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 function toggleAuthMode() {
     isSignUpMode = !isSignUpMode;
-    document.getElementById('auth-title').innerText = isSignUpMode ?
+    document.getElementById('auth-title').innerText = isSignUpMode ? "Signup to SK eSports" : "Login to SK eSports";
+    document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
+}
+function logoutUser() { auth.signOut().then(() => location.reload()); }
+        
