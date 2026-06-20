@@ -14,7 +14,7 @@
 
     <header>
         <div class="logo-container">
-            <h1 class="logo-text">SK ESPORTS</h1>
+            <h1 class="logo-text" onclick="showSection('game-selection')" style="cursor:pointer;">SK ESPORTS</h1>
         </div>
         <nav id="nav-controls">
             <button class="auth-btn" id="loginNavBtn" onclick="openAuthModal()">Login / Signup</button>
@@ -65,11 +65,11 @@
             <button class="back-btn" onclick="showSection('game-selection')">← Back to Games</button>
             <h2 id="selected-game-title" class="section-title">Tournaments</h2>
             
-            <div class="tabs-container" style="display: flex; background: #11141a; padding: 5px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #222; overflow-x: auto; gap: 5px;">
-                <button class="tab-btn active-tab" onclick="switchMatchTab('upcoming')" id="tab-upcoming" style="flex: 1; background: #ff4655; border: none; color: #fff; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">📅 Upcoming</button>
-                <button class="tab-btn" onclick="switchMatchTab('live')" id="tab-live" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">🔴 Live</button>
-                <button class="tab-btn" onclick="switchMatchTab('my_joined')" id="tab-my_joined" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">🎖️ My Matches</button>
-                <button class="tab-btn" onclick="switchMatchTab('past')" id="tab-past" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; white-space: nowrap;">🏁 Past</button>
+            <div class="tabs-container" style="display: flex; background: #11141a; padding: 5px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #222; gap: 5px;">
+                <button class="tab-btn" onclick="switchMatchTab('upcoming')" id="tab-upcoming" style="flex: 1; background: #ff4655; border: none; color: #fff; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer;">📅 Upcoming</button>
+                <button class="tab-btn" onclick="switchMatchTab('live')" id="tab-live" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer;">🔴 Live</button>
+                <button class="tab-btn" onclick="switchMatchTab('my_joined')" id="tab-my_joined" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer;">🎖️ My Matches</button>
+                <button class="tab-btn" onclick="switchMatchTab('past')" id="tab-past" style="flex: 1; background: none; border: none; color: #aaa; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer;">🏁 Past</button>
             </div>
 
             <div class="tournament-list" id="tournaments-container"></div>
@@ -101,7 +101,7 @@
             <div class="success-card">
                 <div class="success-icon">🎉</div>
                 <h1>PARTICIPATED SUCCESSFULLY</h1>
-                <p>Aapka slot dynamic tournament sheet me lock ho chuka hai!</p>
+                <p>Aapka slot entry temporary dynamic registry me safe lock ho chuka hai!</p>
                 <button class="cta-btn" onclick="showSection('game-selection')">Go To Dashboard</button>
             </div>
         </section>
