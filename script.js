@@ -9,6 +9,7 @@ const firebaseConfig = {
     measurementId: "G-KW6J0GE4TF"
 };
 
+// Non-Blocking Safe Initialization Gateway
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -21,7 +22,7 @@ let currentUserData = null;
 let isSignUpMode = false;
 let currentActiveTab = "upcoming";
 
-// GENERATE SCHEDULE ARRAYS
+// GENERATE SCHEDULE ARRAYS (9:00 AM to 9:00 PM)
 function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
@@ -58,18 +59,25 @@ function getDynamicTournaments() {
     return tournaments;
 }
 
-// Global Auth Engine State Registry
+// Global Real-time Auth Tracker Pipeline
 auth.onAuthStateChanged((user) => {
     const loginBtn = document.getElementById('loginNavBtn');
     const profileHeader = document.getElementById('userProfileHeader');
     if (user) {
         if(loginBtn) loginBtn.classList.add('hidden');
         if(profileHeader) profileHeader.classList.remove('hidden');
+        
         db.collection('users').doc(user.uid).onSnapshot((doc) => {
             if (doc.exists) {
                 currentUserData = doc.data();
+                
                 const coinEl = document.getElementById('user-coins');
                 if(coinEl) coinEl.innerText = currentUserData.coins;
+                
+                const modalCoinEl = document.getElementById('modal-user-coins');
+                if(modalCoinEl) modalCoinEl.innerText = currentUserData.coins;
+                
+                renderWalletHistory();
             }
         });
     } else {
@@ -79,22 +87,30 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
+// INSTANT NON-BLOCKING GAME SELECTION CLICK
 function checkAuthAndSelect(gameName) {
-    if (!auth.currentUser) { openAuthModal(); return; }
+    if (!auth.currentUser) { 
+        openAuthModal(); 
+        return; 
+    }
     currentSelection.game = gameName;
+    showSection('tournament-view');
     switchMatchTab('upcoming'); 
 }
 
 function showSection(sectionId) {
     document.querySelectorAll('.interface-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(sectionId).classList.add('active');
+    const section = document.getElementById(sectionId);
+    if(section) section.classList.add('active');
 }
 
 function switchMatchTab(tabName) {
     currentActiveTab = tabName;
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.style.background = 'none';
-        btn.style.color = '#aaa';
+        if(btn) {
+            btn.style.background = 'none';
+            btn.style.color = '#aaa';
+        }
     });
     const activeBtn = document.getElementById(`tab-${tabName}`);
     if(activeBtn) {
@@ -104,10 +120,12 @@ function switchMatchTab(tabName) {
     renderMatchesList();
 }
 
-// RENDERING LIST LOGIC
+// RENDERING SYSTEM GRID LOGIC
 function renderMatchesList() {
     const gameName = currentSelection.game;
-    document.getElementById('selected-game-title').innerText = gameName;
+    const titleEl = document.getElementById('selected-game-title');
+    if(titleEl) titleEl.innerText = gameName;
+    
     const container = document.getElementById('tournaments-container');
     if(!container) return;
     container.innerHTML = "";
@@ -128,7 +146,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Managed inside callback
+            // Evaluated inside snapshot logic block
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -138,6 +156,7 @@ function renderMatchesList() {
         const card = document.createElement('div');
         card.className = "t-card";
         card.id = `card_${uniqueMatchKey}`;
+        
         card.innerHTML = `
             <div class="t-info" onclick="toggleDetailsBox('${t.id}')">
                 <h3>⏰ Time: ${t.time} (${t.mode})</h3>
@@ -147,14 +166,12 @@ function renderMatchesList() {
                     <span id="count_${uniqueMatchKey}" style="color:#66fcf1;">👥 Joined: Loading...</span>
                 </div>
                 
-                <!-- Room Info Module Container -->
                 <div id="room-box-${uniqueMatchKey}" class="hidden" style="background:#1e2736; padding:12px; border-radius:6px; margin-top:10px; border:1px dashed #66fcf1; color:#fff; text-align:left;">
                     <h4 style="margin:0 0 5px 0; color:#66fcf1; font-size:14px;">🔑 Official Room Details:</h4>
                     <p style="margin:3px 0; font-size:13px;">Room ID: <span id="roomIdVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
                     <p style="margin:3px 0; font-size:13px;">Password: <span id="roomPassVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
                 </div>
 
-                <!-- ALL PLAYER LEADERBOARD (SECURE ACCESS GATE) -->
                 <div id="result-box-${uniqueMatchKey}" class="hidden" style="background:#111a24; padding:12px; border-radius:6px; margin-top:10px; border:1px solid #2ecc71; color:#fff; text-align:left;">
                     <h4 style="margin:0 0 8px 0; color:#2ecc71; font-size:14px;">🏆 Full Match Leaderboard / Results:</h4>
                     <div id="secure-leaderboard-view-${uniqueMatchKey}">
@@ -173,7 +190,6 @@ function renderMatchesList() {
                             </table>
                         </div>
                     </div>
-                    <!-- Privacy blocker tag -->
                     <div id="secure-leaderboard-lock-${uniqueMatchKey}" class="hidden" style="padding:4px 0; color:#ff4655; font-size:13px; font-weight:bold;">
                         🔒 Results Locked! Only players who participated in this match can view the scorecard.
                     </div>
@@ -217,7 +233,6 @@ function renderMatchesList() {
             const counterEl = document.getElementById(`count_${uniqueMatchKey}`);
             if(counterEl) counterEl.innerText = `👥 Joined: ${joinedCount}/${t.maxSlots}`;
 
-            // --- 15 MIN ROOM TIMING ENGINE ---
             const matchTotalMinutes = (t.hour24 * 60) + t.minNum;
             const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
             const timeDifference = matchTotalMinutes - currentTotalMinutes;
@@ -226,14 +241,15 @@ function renderMatchesList() {
             if(roomContainer) {
                 if (status === "upcoming" && isUserJoined && timeDifference <= 15) {
                     roomContainer.classList.remove('hidden');
-                    document.getElementById(`roomIdVal-${uniqueMatchKey}`).innerText = databaseRoomId;
-                    document.getElementById(`roomPassVal-${uniqueMatchKey}`).innerText = databaseRoomPass;
+                    const rid = document.getElementById(`roomIdVal-${uniqueMatchKey}`);
+                    const rps = document.getElementById(`roomPassVal-${uniqueMatchKey}`);
+                    if(rid) rid.innerText = databaseRoomId;
+                    if(rps) rps.innerText = databaseRoomPass;
                 } else {
                     roomContainer.classList.add('hidden');
                 }
             }
 
-            // --- SECURE PRIVACY LEADERBOARD ENGINE ---
             const resultContainer = document.getElementById(`result-box-${uniqueMatchKey}`);
             const tbodyEl = document.getElementById(`leaderboard-rows-${uniqueMatchKey}`);
             const tableWrapper = document.getElementById(`secure-leaderboard-view-${uniqueMatchKey}`);
@@ -243,7 +259,6 @@ function renderMatchesList() {
                 if (status === "past") {
                     resultContainer.classList.remove('hidden');
                     
-                    // SECURITY LOCK: Check user participation logic registry
                     if (!isUserJoined) {
                         if(tableWrapper) tableWrapper.classList.add('hidden');
                         if(lockWrapper) lockWrapper.classList.remove('hidden');
@@ -254,16 +269,11 @@ function renderMatchesList() {
                         if(playerList.length === 0) {
                             tbodyEl.innerHTML = `<tr><td colspan="3" style="padding:6px; color:#aaa;">No one joined this match.</td></tr>`;
                         } else {
-                            // Sort by kills descending
-                            let sortedPlayers = [...playerList].sort((a, b) => {
-                                return (parseInt(b.kills || 0)) - (parseInt(a.kills || 0));
-                            });
-
+                            let sortedPlayers = [...playerList].sort((a, b) => (parseInt(b.kills || 0)) - (parseInt(a.kills || 0)));
                             let rowsHtml = "";
                             sortedPlayers.forEach(p => {
                                 let pKills = p.kills !== undefined ? p.kills : "0";
                                 let pPrize = p.prize !== undefined ? p.prize : "0 Coins";
-                                
                                 rowsHtml += `
                                     <tr style="border-bottom: 1px solid #222;">
                                         <td style="padding:6px 4px; font-weight:bold; color:#66fcf1;">${p.gameName || 'Unknown'}</td>
@@ -295,13 +305,53 @@ function renderMatchesList() {
             if(actionContainer) actionContainer.innerHTML = actionBtnHtml;
         });
     });
-
-    showSection('tournament-view');
 }
 
 function toggleDetailsBox(id) {
     const el = document.getElementById(`details-${id}`);
     if(el) el.classList.toggle('hidden');
+}
+
+function openWalletModal() {
+    if (!auth.currentUser) return;
+    const modal = document.getElementById('walletModal');
+    if(modal) modal.classList.remove('hidden');
+}
+
+function closeWalletModal() {
+    const modal = document.getElementById('walletModal');
+    if(modal) modal.classList.add('hidden');
+}
+
+function renderWalletHistory() {
+    const historyTableBody = document.getElementById('wallet-history-rows');
+    if (!historyTableBody) return;
+    
+    if (!currentUserData || !currentUserData.history || currentUserData.history.length === 0) {
+        historyTableBody.innerHTML = `<tr><td colspan="2" style="padding: 10px; color: #aaa; text-align: center;">No transaction history found.</td></tr>`;
+        return;
+    }
+
+    let rowsHtml = "";
+    let reversedHistory = [...currentUserData.history].reverse();
+    
+    reversedHistory.forEach(tx => {
+        let typeColor = tx.type === "Deposit" || tx.type === "Won" ? "#2ecc71" : "#ff4655";
+        let prefix = tx.type === "Deposit" || tx.type === "Won" ? "+" : "-";
+        
+        rowsHtml += `
+            <tr style="border-bottom: 1px solid #1c232d;">
+                <td style="padding: 8px 4px;">
+                    <div style="font-weight: bold; color: #fff;">${tx.title || 'Game Entry'}</div>
+                    <div style="font-size: 10px; color: #666;">${tx.date || ''}</div>
+                </td>
+                <td style="padding: 8px 4px; text-align: right; font-weight: bold; color: ${typeColor};">
+                    ${prefix}🪙${tx.amount}
+                </td>
+            </tr>
+        `;
+    });
+    historyTableBody.innerHTML = rowsHtml;
 }
 
 function openJoinModal(matchKey, fee, matchInfo) {
@@ -330,6 +380,8 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
     const userMobile = currentUserData.mobile;
     const newBalance = currentUserData.coins - tFee;
 
+    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
+
     try {
         await db.collection('tournaments').doc(uniqueMatchKey).set({
             players: firebase.firestore.FieldValue.arrayUnion({ 
@@ -342,7 +394,15 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
             })
         }, { merge: true });
 
-        await db.collection('users').doc(userUID).update({ coins: newBalance });
+        await db.collection('users').doc(userUID).update({ 
+            coins: newBalance,
+            history: firebase.firestore.FieldValue.arrayUnion({
+                title: `${currentSelection.game} (${matchInfo})`,
+                amount: tFee,
+                type: "Debited",
+                date: txDate
+            })
+        });
         
         await fetch(FORMSPREE_URL, {
             method: 'POST',
@@ -363,7 +423,7 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     try {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
-            await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0 });
+            await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
             alert("Registered! Balance: 0 Coins.");
         } else {
             await auth.signInWithEmailAndPassword(dynamicEmail, pass);
@@ -376,7 +436,4 @@ function openAuthModal() { document.getElementById('authModal').classList.remove
 function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 function toggleAuthMode() {
     isSignUpMode = !isSignUpMode;
-    document.getElementById('auth-title').innerText = isSignUpMode ? "Signup to SK eSports" : "Login to SK eSports";
-    document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
-}
-function logoutUser() { auth.signOut().then(() => location.reload()); }
+    document.getElementById('auth-title').inne
