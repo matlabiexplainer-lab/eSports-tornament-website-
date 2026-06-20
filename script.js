@@ -104,7 +104,7 @@ function switchMatchTab(tabName) {
     renderMatchesList();
 }
 
-// RENDERING LIST LOGIC WITH LIVE ROOM ID AND PASSWORD GATEKEEPER
+// RENDERING LIST LOGIC WITH 15-MIN LOCK TIME GATEKEEPER
 function renderMatchesList() {
     const gameName = currentSelection.game;
     document.getElementById('selected-game-title').innerText = gameName;
@@ -128,7 +128,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Async handling
+            // Managed later inside callback
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -147,10 +147,11 @@ function renderMatchesList() {
                     <span id="count_${uniqueMatchKey}" style="color:#66fcf1;">👥 Joined: Loading...</span>
                 </div>
                 
+                <!-- Room Info Module Container (Locked by Time Engine) -->
                 <div id="room-box-${uniqueMatchKey}" class="hidden" style="background:#1e2736; padding:12px; border-radius:6px; margin-top:10px; border:1px dashed #66fcf1; color:#fff; text-align:left;">
                     <h4 style="margin:0 0 5px 0; color:#66fcf1; font-size:14px;">🔑 Official Room Details:</h4>
-                    <p style="margin:3px 0; font-size:13px;">Room ID: <span id="roomIdVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting Admin...</span></p>
-                    <p style="margin:3px 0; font-size:13px;">Password: <span id="roomPassVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting Admin...</span></p>
+                    <p style="margin:3px 0; font-size:13px;">Room ID: <span id="roomIdVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
+                    <p style="margin:3px 0; font-size:13px;">Password: <span id="roomPassVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
                 </div>
 
                 <div id="details-${t.id}" class="hidden" style="background:#0d1117; padding:10px; border-radius:6px; margin-top:10px; border-left:3px solid #ff4655;">
@@ -178,7 +179,6 @@ function renderMatchesList() {
                         isUserJoined = plist.some(p => p.uid === auth.currentUser.uid);
                     }
                 }
-                // Extract room credentials from Firestore document securely
                 if(docData.roomId) databaseRoomId = docData.roomId;
                 if(docData.roomPass) databaseRoomPass = docData.roomPass;
             }
@@ -191,10 +191,15 @@ function renderMatchesList() {
             const counterEl = document.getElementById(`count_${uniqueMatchKey}`);
             if(counterEl) counterEl.innerText = `👥 Joined: ${joinedCount}/${t.maxSlots}`;
 
-            // Reveal Room details securely if player profile matches registry logs
+            // --- 15 MIN ENGINE LOGIC ---
+            const matchTotalMinutes = (t.hour24 * 60) + t.minNum;
+            const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
+            const timeDifference = matchTotalMinutes - currentTotalMinutes;
+
             const roomContainer = document.getElementById(`room-box-${uniqueMatchKey}`);
             if(roomContainer) {
-                if (isUserJoined) {
+                // Khulega tabhi jab user joined ho AUR match start hone me 15 mins ya kam bache ho (ya live chal raha ho)
+                if (isUserJoined && (timeDifference <= 15 || status === "live")) {
                     roomContainer.classList.remove('hidden');
                     document.getElementById(`roomIdVal-${uniqueMatchKey}`).innerText = databaseRoomId;
                     document.getElementById(`roomPassVal-${uniqueMatchKey}`).innerText = databaseRoomPass;
@@ -301,4 +306,3 @@ function toggleAuthMode() {
     document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
 }
 function logoutUser() { auth.signOut().then(() => location.reload()); }
-                                                                   
