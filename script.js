@@ -70,6 +70,12 @@ auth.onAuthStateChanged((user) => {
                 currentUserData = doc.data();
                 const coinEl = document.getElementById('user-coins');
                 if(coinEl) coinEl.innerText = currentUserData.coins;
+                
+                const modalCoinEl = document.getElementById('modal-user-coins');
+                if(modalCoinEl) modalCoinEl.innerText = currentUserData.coins;
+                
+                // Real-time render active passbook rows
+                renderWalletHistory();
             }
         });
     } else {
@@ -78,6 +84,48 @@ auth.onAuthStateChanged((user) => {
         currentUserData = null;
     }
 });
+
+// WALLET SYSTEM HOOKS (OPEN / CLOSE / RENDER PASSBOOK)
+function openWalletModal() {
+    if (!auth.currentUser) return;
+    document.getElementById('walletModal').classList.remove('hidden');
+}
+
+function closeWalletModal() {
+    document.getElementById('walletModal').classList.add('hidden');
+}
+
+function renderWalletHistory() {
+    const historyTableBody = document.getElementById('wallet-history-rows');
+    if (!historyTableBody) return;
+    
+    if (!currentUserData || !currentUserData.history || currentUserData.history.length === 0) {
+        historyTableBody.innerHTML = `<tr><td colspan="2" style="padding: 10px; color: #aaa; text-align: center;">No transaction history found.</td></tr>`;
+        return;
+    }
+
+    let rowsHtml = "";
+    // Show newest transactions first
+    let reversedHistory = [...currentUserData.history].reverse();
+    
+    reversedHistory.forEach(tx => {
+        let typeColor = tx.type === "Deposit" || tx.type === "Won" ? "#2ecc71" : "#ff4655";
+        let prefix = tx.type === "Deposit" || tx.type === "Won" ? "+" : "-";
+        
+        rowsHtml += `
+            <tr style="border-bottom: 1px solid #1c232d;">
+                <td style="padding: 8px 4px;">
+                    <div style="font-weight: bold; color: #fff;">${tx.title || 'Game Entry'}</div>
+                    <div style="font-size: 10px; color: #666;">${tx.date || ''}</div>
+                </td>
+                <td style="padding: 8px 4px; text-align: right; font-weight: bold; color: ${typeColor};">
+                    ${prefix}🪙${tx.amount}
+                </td>
+            </tr>
+        `;
+    });
+    historyTableBody.innerHTML = rowsHtml;
+}
 
 function checkAuthAndSelect(gameName) {
     if (!auth.currentUser) { openAuthModal(); return; }
@@ -147,14 +195,12 @@ function renderMatchesList() {
                     <span id="count_${uniqueMatchKey}" style="color:#66fcf1;">👥 Joined: Loading...</span>
                 </div>
                 
-                <!-- Room Info Module Container -->
                 <div id="room-box-${uniqueMatchKey}" class="hidden" style="background:#1e2736; padding:12px; border-radius:6px; margin-top:10px; border:1px dashed #66fcf1; color:#fff; text-align:left;">
                     <h4 style="margin:0 0 5px 0; color:#66fcf1; font-size:14px;">🔑 Official Room Details:</h4>
                     <p style="margin:3px 0; font-size:13px;">Room ID: <span id="roomIdVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
                     <p style="margin:3px 0; font-size:13px;">Password: <span id="roomPassVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
                 </div>
 
-                <!-- ALL PLAYER LEADERBOARD (SECURE ACCESS GATE) -->
                 <div id="result-box-${uniqueMatchKey}" class="hidden" style="background:#111a24; padding:12px; border-radius:6px; margin-top:10px; border:1px solid #2ecc71; color:#fff; text-align:left;">
                     <h4 style="margin:0 0 8px 0; color:#2ecc71; font-size:14px;">🏆 Full Match Leaderboard / Results:</h4>
                     <div id="secure-leaderboard-view-${uniqueMatchKey}">
@@ -173,7 +219,6 @@ function renderMatchesList() {
                             </table>
                         </div>
                     </div>
-                    <!-- Privacy blocker tag -->
                     <div id="secure-leaderboard-lock-${uniqueMatchKey}" class="hidden" style="padding:4px 0; color:#ff4655; font-size:13px; font-weight:bold;">
                         🔒 Results Locked! Only players who participated in this match can view the scorecard.
                     </div>
@@ -243,7 +288,6 @@ function renderMatchesList() {
                 if (status === "past") {
                     resultContainer.classList.remove('hidden');
                     
-                    // SECURITY LOCK: Check user participation logic registry
                     if (!isUserJoined) {
                         if(tableWrapper) tableWrapper.classList.add('hidden');
                         if(lockWrapper) lockWrapper.classList.remove('hidden');
@@ -254,16 +298,11 @@ function renderMatchesList() {
                         if(playerList.length === 0) {
                             tbodyEl.innerHTML = `<tr><td colspan="3" style="padding:6px; color:#aaa;">No one joined this match.</td></tr>`;
                         } else {
-                            // Sort by kills descending
-                            let sortedPlayers = [...playerList].sort((a, b) => {
-                                return (parseInt(b.kills || 0)) - (parseInt(a.kills || 0));
-                            });
-
+                            let sortedPlayers = [...playerList].sort((a, b) => (parseInt(b.kills || 0)) - (parseInt(a.kills || 0)));
                             let rowsHtml = "";
                             sortedPlayers.forEach(p => {
                                 let pKills = p.kills !== undefined ? p.kills : "0";
                                 let pPrize = p.prize !== undefined ? p.prize : "0 Coins";
-                                
                                 rowsHtml += `
                                     <tr style="border-bottom: 1px solid #222;">
                                         <td style="padding:6px 4px; font-weight:bold; color:#66fcf1;">${p.gameName || 'Unknown'}</td>
@@ -317,6 +356,7 @@ function openJoinModal(matchKey, fee, matchInfo) {
 
 function closeJoinModal() { document.getElementById('joinModal').classList.add('hidden'); }
 
+// SECURE ARRAYS TRANSACTIONS & PASSBOOK HISTORY LOGGER
 document.getElementById('joinForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const gameNameInput = document.getElementById('playerGameName').value.trim();
@@ -330,6 +370,9 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
     const userMobile = currentUserData.mobile;
     const newBalance = currentUserData.coins - tFee;
 
+    // Create a timestamp string for passbook logging
+    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
+
     try {
         await db.collection('tournaments').doc(uniqueMatchKey).set({
             players: firebase.firestore.FieldValue.arrayUnion({ 
@@ -342,7 +385,16 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
             })
         }, { merge: true });
 
-        await db.collection('users').doc(userUID).update({ coins: newBalance });
+        // Update Balance and push a transaction object inside users history array
+        await db.collection('users').doc(userUID).update({ 
+            coins: newBalance,
+            history: firebase.firestore.FieldValue.arrayUnion({
+                title: `${currentSelection.game} (${matchInfo})`,
+                amount: tFee,
+                type: "Debited",
+                date: txDate
+            })
+        });
         
         await fetch(FORMSPREE_URL, {
             method: 'POST',
@@ -363,7 +415,8 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     try {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
-            await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0 });
+            // Initialize user doc with default balance and empty transaction history array
+            await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
             alert("Registered! Balance: 0 Coins.");
         } else {
             await auth.signInWithEmailAndPassword(dynamicEmail, pass);
@@ -375,8 +428,4 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
 function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
 function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 function toggleAuthMode() {
-    isSignUpMode = !isSignUpMode;
-    document.getElementById('auth-title').innerText = isSignUpMode ? "Signup to SK eSports" : "Login to SK eSports";
-    document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
-}
-function logoutUser() { auth.signOut().then(() => location.reload()); }
+    isSignUpMo
