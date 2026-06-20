@@ -175,3 +175,11 @@ nav a { color: #fff; text-decoration: none; margin-left: 20px; }
 .toggle-auth-text { margin-top: 20px; font-size: 14px; }
 .toggle-auth-text a { color: #66fcf1; text-decoration: none; }
 .hidden { display: none !important; }
+.t-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+.t-card:hover {
+    border-left-color: #66fcf1;
+    background: #1c232d !important;
+}
