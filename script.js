@@ -113,7 +113,6 @@ function selectGame(gameName) {
     const mapName = gameName === "Free Fire MAX" ? "Bermuda Classic" : "Erangel Classic";
 
     activeMatches.forEach(t => {
-        // Safe Timeline Verification Check
         let status = "upcoming"; 
         if (t.hour24 < currentHour || (t.hour24 === currentHour && t.minNum + 30 <= currentMin)) {
             status = "past";
@@ -123,7 +122,6 @@ function selectGame(gameName) {
 
         const uniqueMatchKey = `${gameName.replace(/\s+/g, '')}_${t.id}`;
         
-        // Single Document Fetch instead of heavy listeners to prevent loops
         db.collection('tournaments').doc(uniqueMatchKey).get().then((doc) => {
             let joinedCount = 0;
             let isUserJoined = false;
@@ -185,30 +183,66 @@ function toggleDetailsBox(id) {
     if(el) el.classList.toggle('hidden');
 }
 
-// Secure Atomic Wallet System
+// 3. SECURE TRANSACTION ENGINE: ASKS FOR GAME UID & NAME
 async function processParticipation(uniqueMatchKey, tFee, matchInfo) {
     if (!currentUserData) return;
-    if (currentUserData.coins < tFee) { showSection('wallet-topup'); return; }
+    
+    // Check Coins first
+    if (currentUserData.coins < tFee) { 
+        showSection('wallet-topup'); 
+        return; 
+    }
+
+    // Ask for In-Game Name (IGN)
+    const gameNameInput = prompt("Apna In-Game Name (IGN) enter karein:");
+    if (!gameNameInput || gameNameInput.trim() === "") {
+        alert("Registration cancelled! Game name zaroori hai.");
+        return;
+    }
+
+    // Ask for Game Character UID
+    const gameUidInput = prompt("Apni Game Character UID enter karein:");
+    if (!gameUidInput || gameUidInput.trim() === "") {
+        alert("Registration cancelled! Game UID zaroori hai.");
+        return;
+    }
 
     const userUID = auth.currentUser.uid;
     const userMobile = currentUserData.mobile;
     const newBalance = currentUserData.coins - tFee;
 
     try {
+        // Save Player Details inside Firestore Tournament Collection
         await db.collection('tournaments').doc(uniqueMatchKey).set({
-            players: firebase.firestore.FieldValue.arrayUnion({ uid: userUID, mobile: userMobile })
+            players: firebase.firestore.FieldValue.arrayUnion({ 
+                uid: userUID, 
+                mobile: userMobile,
+                gameName: gameNameInput.trim(),
+                gameUID: gameUidInput.trim()
+            })
         }, { merge: true });
 
+        // Deduct Coins from User Balance
         await db.collection('users').doc(userUID).update({ coins: newBalance });
         
+        // Send Backup Notification Log to Formspree
         await fetch(FORMSPREE_URL, {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Mobile: userMobile, Match: matchInfo })
+            body: JSON.stringify({ 
+                Status: "MATCH_JOINED",
+                Mobile: userMobile, 
+                Match: matchInfo,
+                GamePlayerName: gameNameInput.trim(),
+                GameUID: gameUidInput.trim(),
+                CoinsDeducted: tFee
+            })
         });
 
         showSection('success-screen');
-    } catch (err) { alert("Error: " + err.message); }
+    } catch (err) { 
+        alert("Error: " + err.message); 
+    }
 }
 
 // Authentication Logic
@@ -239,4 +273,3 @@ function showSection(sectionId) {
     document.querySelectorAll('.interface-section').forEach(s => s.classList.remove('active'));
     document.getElementById(sectionId).classList.add('active');
 }
-
