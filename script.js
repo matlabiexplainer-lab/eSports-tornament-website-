@@ -22,7 +22,7 @@ let currentUserData = null;
 let isSignUpMode = false;
 let currentActiveTab = "upcoming";
 
-// GENERATE SCHEDULE ARRAYS (9:00 AM to 9:00 PM) - FIXED & FULLY OPERATIONAL
+// GENERATE SCHEDULE ARRAYS (9:00 AM to 9:00 PM) - PLURAL NAME FIXED
 function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
@@ -37,7 +37,7 @@ function getDynamicTournaments() {
             let matchTime = `${displayHour}:${mins} ${ampm}`;
             
             let modeIndex = currentId % 3;
-            let currentMode = modes[modeIndex];
+            let currentMode = modes[modeIndex]; // REPLACED 'nodes' WITH 'modes'
             
             tournaments.push({
                 id: `match_${hour}_${mins}`,
@@ -71,7 +71,6 @@ auth.onAuthStateChanged((user) => {
             if (doc.exists) {
                 currentUserData = doc.data();
                 
-                // Sync elements on navbar and modal dashboard
                 const coinEl = document.getElementById('user-coins');
                 if(coinEl) coinEl.innerText = currentUserData.coins;
                 
@@ -95,8 +94,6 @@ function checkAuthAndSelect(gameName) {
         return; 
     }
     currentSelection.game = gameName;
-    
-    // Switch UI instantly to prevent any button freeze lag
     showSection('tournament-view');
     switchMatchTab('upcoming'); 
 }
@@ -149,7 +146,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Evaluated inside snapshot logic below
+            // Managed inside callback
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -207,7 +204,6 @@ function renderMatchesList() {
         `;
         container.appendChild(card);
 
-        // Fetch document listeners asynchronously
         db.collection('tournaments').doc(uniqueMatchKey).onSnapshot((doc) => {
             let joinedCount = 0;
             let isUserJoined = false;
@@ -433,4 +429,10 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
             await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
             alert("Registered! Balance: 0 Coins.");
         } else {
-            await auth.signInWi
+            await auth.signInWithEmailAndPassword(dynamicEmail, pass);
+        }
+        closeAuthModal();
+    } catch (err) { alert(err.message); }
+});
+
+function openAuthModal() { document.getElemen
