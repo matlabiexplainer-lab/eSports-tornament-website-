@@ -1,4 +1,4 @@
-// Firebase Live Global Configuration
+// Google Firebase App Authentication Live Client Matrix
 const firebaseConfig = {
     apiKey: "AIzaSyB-C7Ks_lXWWf1RMKUQ8cPuhov5y7ZveXM",
     authDomain: "sk-esports-90bf9.firebaseapp.com",
@@ -9,7 +9,6 @@ const firebaseConfig = {
     measurementId: "G-KW6J0GE4TF"
 };
 
-// Safe Initialization
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -17,12 +16,12 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const FORMSPREE_URL = 'https://formspree.io/f/xnjyelpq'; 
 
-let currentSelection = { game: "", tournamentId: "", fee: 0, title: "" };
+let currentSelection = { game: "", fee: 0, title: "" };
 let currentUserData = null;
 let isSignUpMode = false;
 let currentActiveTab = "upcoming";
 
-// 1. STABLE TIME SCHEDULER ENGINE (9:00 AM to 9:00 PM)
+// 1. GENERATE STATIC ARRAYS TO PREVENT FIRESTORE CALL FREEZE ON CLICK
 function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
@@ -59,8 +58,8 @@ function getDynamicTournaments() {
     return tournaments;
 }
 
-// Real-time Auth Tracker
-auth.onAuthStateChanged(async (user) => {
+// Global Auth Engine State Registry
+auth.onAuthStateChanged((user) => {
     const loginBtn = document.getElementById('loginNavBtn');
     const profileHeader = document.getElementById('userProfileHeader');
     if (user) {
@@ -80,7 +79,22 @@ auth.onAuthStateChanged(async (user) => {
     }
 });
 
-// Category Tabs UI Switcher
+// Click Safe Interceptor Gate
+function checkAuthAndSelect(gameName) {
+    if (!auth.currentUser) { 
+        openAuthModal(); 
+        return; 
+    }
+    currentSelection.game = gameName;
+    switchMatchTab('upcoming'); // Click standard setup trigger
+}
+
+function showSection(sectionId) {
+    document.querySelectorAll('.interface-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(sectionId).classList.add('active');
+}
+
+// Tabs UI Layout Filter Shuffler
 function switchMatchTab(tabName) {
     currentActiveTab = tabName;
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -92,14 +106,12 @@ function switchMatchTab(tabName) {
         activeBtn.style.background = '#ff4655';
         activeBtn.style.color = '#fff';
     }
-    if(currentSelection.game) {
-        selectGame(currentSelection.game);
-    }
+    renderMatchesList();
 }
 
-// 2. RENDER ENGINE WITH CRASH PROTECTION
-function selectGame(gameName) {
-    currentSelection.game = gameName;
+// 2. MAIN CORES: STABLE RENDER LIST ENGINE WITHOUT LOOPS
+function renderMatchesList() {
+    const gameName = currentSelection.game;
     document.getElementById('selected-game-title').innerText = gameName;
     const container = document.getElementById('tournaments-container');
     if(!container) return;
@@ -120,9 +132,39 @@ function selectGame(gameName) {
             status = "live";
         }
 
+        // System rendering matrix check
+        if (currentActiveTab === "my_joined") {
+            // Checked asynchronously, skips basic rules grid if tab is profile index
+        } else if (currentActiveTab !== status) {
+            return; 
+        }
+
         const uniqueMatchKey = `${gameName.replace(/\s+/g, '')}_${t.id}`;
         
-        db.collection('tournaments').doc(uniqueMatchKey).get().then((doc) => {
+        // Dynamic Node Element Appender Creation
+        const card = document.createElement('div');
+        card.className = "t-card";
+        card.id = `card_${uniqueMatchKey}`;
+        card.innerHTML = `
+            <div class="t-info" onclick="toggleDetailsBox('${t.id}')">
+                <h3>⏰ Time: ${t.time} (${t.mode})</h3>
+                <p style="font-size:12px; color:#aaa; margin:4px 0;">🗺️ Map: ${mapName} | Tap for Rewards List</p>
+                <div class="t-details">
+                    <span>🪙 Entry: ${t.fee} Coins</span>
+                    <span id="count_${uniqueMatchKey}" style="color:#66fcf1;">👥 Joined: Loading...</span>
+                </div>
+                <div id="details-${t.id}" class="hidden" style="background:#0d1117; padding:10px; border-radius:6px; margin-top:10px; border-left:3px solid #ff4655;">
+                    <p style="margin:4px 0; font-size:13px;">🎯 Winner/Booyah: <strong>${t.rewards.winner}</strong></p>
+                    <p style="margin:4px 0; font-size:13px;">🎖️ Top 10 Finisher: <strong>${t.rewards.top10}</strong></p>
+                    <p style="margin:4px 0; font-size:13px;">💀 Per Kill Reward: <strong>${t.rewards.perKill}</strong></p>
+                </div>
+            </div>
+            <div id="action_${uniqueMatchKey}"><button class="join-btn" style="background:#444;" disabled>Processing...</button></div>
+        `;
+        container.appendChild(card);
+
+        // Fetch Live Counter data asynchronously after structural render nodes complete
+        db.collection('tournaments').doc(uniqueMatchKey).onSnapshot((doc) => {
             let joinedCount = 0;
             let isUserJoined = false;
             
@@ -133,48 +175,34 @@ function selectGame(gameName) {
                     isUserJoined = plist.some(p => p.uid === auth.currentUser.uid);
                 }
             }
-            
-            let shouldRender = false;
-            if (currentActiveTab === status) {
-                shouldRender = true;
-            } else if (currentActiveTab === "my_joined" && isUserJoined) {
-                shouldRender = true;
+
+            // Clean layout if profile index array state changes
+            if (currentActiveTab === "my_joined" && !isUserJoined) {
+                card.remove();
+                return;
             }
 
-            if (!shouldRender) return;
+            const counterEl = document.getElementById(`count_${uniqueMatchKey}`);
+            if(counterEl) counterEl.innerText = `👥 Joined: ${joinedCount}/${t.maxSlots}`;
 
-            let actionButton = "";
+            let actionBtnHtml = "";
             if (status === "past") {
-                actionButton = `<button class="join-btn" style="background:#333; color:#777;" disabled>Match Ended</button>`;
+                actionBtnHtml = `<button class="join-btn" style="background:#333; color:#777;" disabled>Match Ended</button>`;
             } else if (status === "live") {
-                actionButton = `<button class="join-btn" style="background:#e74c3c;" disabled>🔴 Live Match</button>`;
+                actionBtnHtml = `<button class="join-btn" style="background:#e74c3c;" disabled>🔴 Live Match</button>`;
             } else if (isUserJoined) {
-                actionButton = `<button class="join-btn" style="background:#2ecc71;" disabled>Joined ✓</button>`;
+                actionBtnHtml = `<button class="join-btn" style="background:#2ecc71;" disabled>Joined ✓</button>`;
             } else {
-                actionButton = `<button class="join-btn" onclick="processParticipation('${uniqueMatchKey}', ${t.fee}, '${t.time} ${t.mode}')">Join Match</button>`;
+                actionBtnHtml = `<button class="join-btn" onclick="processParticipation('${uniqueMatchKey}', ${t.fee}, '${t.time} ${t.mode}')">Join Match</button>`;
             }
 
-            const card = document.createElement('div');
-            card.className = "t-card";
-            card.innerHTML = `
-                <div class="t-info" onclick="toggleDetailsBox('${t.id}')">
-                    <h3>⏰ Time: ${t.time} (${t.mode})</h3>
-                    <p style="font-size:12px; color:#aaa; margin:4px 0;">🗺️ Map: ${mapName} | Click for Rewards List</p>
-                    <div class="t-details">
-                        <span>🪙 Entry: ${t.fee} Coins</span>
-                        <span style="color:#66fcf1;">👥 Joined: ${joinedCount}/${t.maxSlots}</span>
-                    </div>
-                    <div id="details-${t.id}" class="hidden" style="background:#0d1117; padding:10px; border-radius:6px; margin-top:10px; border-left:3px solid #ff4655;">
-                        <p style="margin:4px 0; font-size:13px;">🎯 Winner/Booyah: <strong>${t.rewards.winner}</strong></p>
-                        <p style="margin:4px 0; font-size:13px;">🎖️ Top 10 Finisher: <strong>${t.rewards.top10}</strong></p>
-                        <p style="margin:4px 0; font-size:13px;">💀 Per Kill Reward: <strong>${t.rewards.perKill}</strong></p>
-                    </div>
-                </div>
-                ${actionButton}
-            `;
-            container.appendChild(card);
-        }).catch(err => console.log("Fetch clear"));
+            const actionContainer = document.getElementById(`action_${uniqueMatchKey}`);
+            if(actionContainer) actionContainer.innerHTML = actionBtnHtml;
+        }, (err) => {
+            // Safe silent error management bypass rules
+        });
     });
+
     showSection('tournament-view');
 }
 
@@ -183,36 +211,22 @@ function toggleDetailsBox(id) {
     if(el) el.classList.toggle('hidden');
 }
 
-// 3. SECURE TRANSACTION ENGINE: ASKS FOR GAME UID & NAME
+// 3. SECURE ACTION ENGINE: COLLECTS CHARACTER IGN & UID
 async function processParticipation(uniqueMatchKey, tFee, matchInfo) {
     if (!currentUserData) return;
-    
-    // Check Coins first
-    if (currentUserData.coins < tFee) { 
-        showSection('wallet-topup'); 
-        return; 
-    }
+    if (currentUserData.coins < tFee) { showSection('wallet-topup'); return; }
 
-    // Ask for In-Game Name (IGN)
     const gameNameInput = prompt("Apna In-Game Name (IGN) enter karein:");
-    if (!gameNameInput || gameNameInput.trim() === "") {
-        alert("Registration cancelled! Game name zaroori hai.");
-        return;
-    }
+    if (!gameNameInput || gameNameInput.trim() === "") { alert("Cancelled! Name missing."); return; }
 
-    // Ask for Game Character UID
     const gameUidInput = prompt("Apni Game Character UID enter karein:");
-    if (!gameUidInput || gameUidInput.trim() === "") {
-        alert("Registration cancelled! Game UID zaroori hai.");
-        return;
-    }
+    if (!gameUidInput || gameUidInput.trim() === "") { alert("Cancelled! UID missing."); return; }
 
     const userUID = auth.currentUser.uid;
     const userMobile = currentUserData.mobile;
     const newBalance = currentUserData.coins - tFee;
 
     try {
-        // Save Player Details inside Firestore Tournament Collection
         await db.collection('tournaments').doc(uniqueMatchKey).set({
             players: firebase.firestore.FieldValue.arrayUnion({ 
                 uid: userUID, 
@@ -222,30 +236,19 @@ async function processParticipation(uniqueMatchKey, tFee, matchInfo) {
             })
         }, { merge: true });
 
-        // Deduct Coins from User Balance
         await db.collection('users').doc(userUID).update({ coins: newBalance });
         
-        // Send Backup Notification Log to Formspree
         await fetch(FORMSPREE_URL, {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                Status: "MATCH_JOINED",
-                Mobile: userMobile, 
-                Match: matchInfo,
-                GamePlayerName: gameNameInput.trim(),
-                GameUID: gameUidInput.trim(),
-                CoinsDeducted: tFee
-            })
+            body: JSON.stringify({ Mobile: userMobile, Match: matchInfo, IGN: gameNameInput, UID: gameUidInput })
         });
 
         showSection('success-screen');
-    } catch (err) { 
-        alert("Error: " + err.message); 
-    }
+    } catch (err) { alert("Error: " + err.message); }
 }
 
-// Authentication Logic
+// Form Handlers
 document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const inputVal = document.getElementById('authIdentifier').value.trim();
@@ -256,7 +259,7 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
             await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0 });
-            alert("Registered! Wallet: 0 Coins.");
+            alert("Registered! Balance: 0 Coins.");
         } else {
             await auth.signInWithEmailAndPassword(dynamicEmail, pass);
         }
@@ -264,12 +267,12 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     } catch (err) { alert(err.message); }
 });
 
+function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
+function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    document.getElementById('auth-title').innerText = isSignUpMode ? "Signup to SK eSports" : "Login to SK eSports";
+    document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
+}
 function logoutUser() { auth.signOut().then(() => location.reload()); }
-function checkAuthAndSelect(gameName) {
-    if (!auth.currentUser) { openAuthModal(); return; }
-    selectGame(gameName);
-}
-function showSection(sectionId) {
-    document.querySelectorAll('.interface-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(sectionId).classList.add('active');
-}
+
