@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SK eSports Platform</title>
+    <title>SK eSports Premium Platform</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -13,11 +16,33 @@
             <img src="Logo.png" alt="SK eSports Logo" class="nav-logo">
             <span class="logo-text">SK ESPORTS</span>
         </div>
-        <nav>
-            <a href="#" onclick="showSection('game-selection')">Home</a>
-            <a href="#leaderboard">Leaderboard</a>
+        <nav id="nav-controls">
+            <button class="auth-btn" id="loginNavBtn" onclick="openAuthModal()">Login / Signup</button>
+            <div id="userProfileHeader" class="hidden">
+                <span id="header-wallet">🪙 <span id="user-coins">0</span> Coins</span>
+                <button class="logout-btn" onclick="logoutUser()">Logout</button>
+            </div>
         </nav>
     </header>
+
+    <div id="authModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <button class="close-modal" onclick="closeAuthModal()">×</button>
+            <h2 id="auth-title">Login to SK eSports</h2>
+            <form id="authForm">
+                <div class="form-group">
+                    <label>Mobile Number / Email:</label>
+                    <input type="text" id="authIdentifier" required placeholder="Enter your mobile/email">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="authPassword" required placeholder="Enter password">
+                </div>
+                <button type="submit" class="submit-btn" id="authSubmitBtn">Login</button>
+            </form>
+            <p class="toggle-auth-text">Account nahi hai? <a href="#" onclick="toggleAuthMode()">Signup Karein</a></p>
+        </div>
+    </div>
 
     <main class="container">
 
@@ -25,11 +50,11 @@
             <h1 class="main-title">SELECT YOUR GAME</h1>
             <p class="subtitle">Choose a game to view live tournaments</p>
             <div class="game-grid">
-                <div class="game-card ff-card" onclick="selectGame('Free Fire MAX')">
+                <div class="game-card ff-card" onclick="checkAuthAndSelect('Free Fire MAX')">
                     <div class="game-overlay"></div>
                     <h2>FREE FIRE MAX</h2>
                 </div>
-                <div class="game-card bgmi-card" onclick="selectGame('BGMI')">
+                <div class="game-card bgmi-card" onclick="checkAuthAndSelect('BGMI')">
                     <div class="game-overlay"></div>
                     <h2>BGMI</h2>
                 </div>
@@ -39,52 +64,30 @@
         <section id="tournament-view" class="interface-section">
             <button class="back-btn" onclick="showSection('game-selection')">← Back to Games</button>
             <h2 id="selected-game-title" class="section-title">Tournaments</h2>
-            
-            <div class="tournament-list" id="tournaments-container">
-                </div>
+            <div class="tournament-list" id="tournaments-container"></div>
         </section>
 
-        <section id="registration-flow" class="interface-section">
-            <button class="back-btn" onclick="showSection('tournament-view')">← Back to Tournaments</button>
-            <h2 class="section-title">Tournament Registration</h2>
-            
-            <div class="flow-container">
-                <form id="megaForm" class="reg-form">
-                    <div class="form-group">
-                        <label>Player In-Game Name:</label>
-                        <input type="text" id="pName" required placeholder="Enter exact IGN">
-                    </div>
-                    <div class="form-group">
-                        <label>Character UID:</label>
-                        <input type="text" id="pUid" required placeholder="e.g. 512345678">
-                    </div>
-                    <div class="form-group">
-                        <label>WhatsApp Number:</label>
-                        <input type="tel" id="pPhone" required placeholder="For Room ID/Pass">
-                    </div>
-
-                    <div class="payment-box">
-                        <h3>💳 Entry Fee Payment</h3>
-                        <p class="fee-text">Amount to Pay: <span id="flow-fee">₹0</span></p>
-                        <div class="qr-placeholder">
-                            <p style="color: #66fcf1; font-weight: bold; margin-bottom: 10px;">SCAN TO PAY</p>
-                            <p style="font-size: 14px; color: #aaa;">UPI ID: skesports@ybl</p>
-                        </div>
-                        <p class="payment-instruction">Kindly pay the entry fee via UPI to the ID above, then click submit below.</p>
-                    </div>
-
-                    <button type="submit" class="submit-btn" id="submitFlowBtn">Complete Registration & Pay</button>
-                </form>
+        <section id="wallet-topup" class="interface-section">
+            <button class="back-btn" onclick="showSection('tournament-view')">← Back</button>
+            <div class="success-card" style="border-color: #ff4655;">
+                <div class="success-icon">⚠️</div>
+                <h1>Insufficient Coins!</h1>
+                <p>Is tournament me participate karne ke liye aapke paas paryapt coins nahi hain.</p>
+                <div class="payment-box">
+                    <h3>📥 Top-up Coins</h3>
+                    <p>₹1 = 1 Coin</p>
+                    <p style="font-size: 14px; color: #aaa; margin-top: 10px;">UPI ID: skesports@ybl</p>
+                    <p style="font-size: 12px; color: #ff4655; margin-top: 5px;">*Pay karne ke baad apna screenshot aur Mobile no. Admin ko WhatsApp karein, coins 5 mins me add ho jayenge.</p>
+                </div>
+                <a href="https://wa.me/916206792655" target="_blank" class="cta-btn" style="background: #2ecc71; color: #fff;">Send Screenshot to Admin</a>
             </div>
         </section>
 
         <section id="success-screen" class="interface-section success-container">
             <div class="success-card">
-                <div class="success-icon">🏆</div>
-                <h1>REGISTRATION COMPLETE</h1>
-                <p>Aapka registration successfully humare secure dashboard me record ho gaya hai.</p>
-                <div class="status-badge">Status: Awaiting Payment Verification</div>
-                <p class="note">Match Room ID aur Password aapke diye gaye WhatsApp number par match shuru hone se 15 minute pehle bhej diya jayega.</p>
+                <div class="success-icon">🎉</div>
+                <h1>PARTICIPATED SUCCESSFULLY</h1>
+                <p>Aapke wallet se coins deduct ho gaye hain aur aapka slot reserve ho chuka hai!</p>
                 <button class="cta-btn" onclick="showSection('game-selection')">Go To Dashboard</button>
             </div>
         </section>
