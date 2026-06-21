@@ -133,9 +133,10 @@ function renderMatchesList() {
             return; 
         }
 
-        // Aaj ki date generate karein taaki kal ka data aaj overlap na ho
+        // Purani uniqueMatchKey wali line ko mita kar ye dono lines paste karein:
 const todayDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
 const uniqueMatchKey = `${gameName.replace(/\s+/g, '')}_${t.id}_${todayDate}`;
+
 
         
         const card = document.createElement('div');
