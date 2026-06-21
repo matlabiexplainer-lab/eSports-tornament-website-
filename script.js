@@ -662,3 +662,105 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
     } catch (err) { alert("Error: " + err.message); }
 });
 
+// === ISS CODE KO SCRIPT.JS KE SABSE NICHE (END MEIN) WAPAS PASTE KAREIN ===
+
+// 1. EXTEND TOURNAMENT SNAPSHOT TO SHOW DYNAMIC "ADD TEAMMATE" BUTTONS
+function appendTeammateActionControls(uniqueMatchKey, isUserJoined, matchInfo, defaultFee) {
+    // Agar status past/live hai toh buttons checkouts automatic handles hain
+    const actionContainer = document.getElementById(`action_${uniqueMatchKey}`);
+    if (!actionContainer) return;
+
+    // Live automatic fee calculate karein
+    let dynamicFee = defaultFee;
+    db.collection('tournaments').doc(uniqueMatchKey).get().then((doc) => {
+        if (doc.exists && doc.data().entryFee !== undefined) {
+            dynamicFee = doc.data().entryFee;
+        }
+
+        // Agar user pehle se joined hai toh use doosre options ke sath ek "Add Teammate" button bhi dikhega
+        if (isUserJoined && !uniqueMatchKey.includes("Solo")) {
+            actionContainer.innerHTML = `
+                <div style="display: flex; gap: 5px; flex-direction: column;">
+                    <button class="join-btn" style="background:#2ecc71; margin-bottom:4px;" disabled>Joined ✓</button>
+                    <button class="join-btn" style="background:#66fcf1; color:#000; font-weight:bold;" onclick="openTeammateModal('${uniqueMatchKey}', ${dynamicFee}, '${matchInfo}')">➕ Add Teammate (🪙${dynamicFee})</button>
+                </div>
+            `;
+        }
+    });
+}
+
+// 2. OPEN TEAMMATE MODAL SYSTEM
+function openTeammateModal(matchKey, fee, matchInfo) {
+    if (!currentUserData) return;
+    
+    // Check if Leader has enough coins for teammate fee
+    if (currentUserData.coins < fee) { 
+        showSection('wallet-topup'); 
+        return; 
+    }
+    
+    currentSelection.currentMatchKey = matchKey;
+    currentSelection.fee = fee;
+    currentSelection.currentMatchInfo = matchInfo;
+    
+    document.getElementById('mateGameName').value = "";
+    document.getElementById('mateGameUID').value = "";
+    document.getElementById('addTeammateModal').classList.remove('hidden');
+}
+
+function closeTeammateModal() { 
+    document.getElementById('addTeammateModal').classList.add('hidden'); 
+}
+
+// 3. TEAMMATE SUBMIT FORM (PAY PER SEAT AUTOMATION GATEWAY)
+document.getElementById('addTeammateForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const mateNameInput = document.getElementById('mateGameName').value.trim();
+    const mateUidInput = document.getElementById('mateGameUID').value.trim();
+    closeTeammateModal();
+
+    const uniqueMatchKey = currentSelection.currentMatchKey;
+    const tFee = currentSelection.fee; // Dynamic pay per seat charge
+    const matchInfo = currentSelection.currentMatchInfo;
+    
+    const leaderUID = auth.currentUser.uid;
+    const leaderMobile = currentUserData.mobile;
+    const newLeaderBalance = currentUserData.coins - tFee;
+
+    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
+
+    try {
+        // A. Teammate data inject inside same tournament doc players array
+        await db.collection('tournaments').doc(uniqueMatchKey).set({
+            players: firebase.firestore.FieldValue.arrayUnion({ 
+                uid: `${leaderUID}_mate_${Date.now()}`, // Unique map key generated under leader
+                mobile: leaderMobile,
+                gameName: mateNameInput,
+                gameUID: mateUidInput,
+                kills: 0,
+                prize: "0 Coins"
+            })
+        }, { merge: true });
+
+        // B. Automatic exact dynamic fee balance deduction from Team Leader's account
+        await db.collection('users').doc(leaderUID).set({ 
+            coins: newLeaderBalance,
+            history: firebase.firestore.FieldValue.arrayUnion({
+                title: `Teammate: ${mateNameInput} (${matchInfo})`,
+                amount: tFee,
+                type: "Debited",
+                date: txDate
+            })
+        }, { merge: true });
+        
+        // C. Formspree webhook pipeline notice alert sync
+        await fetch(FORMSPREE_URL, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Mobile: leaderMobile, Match: `${matchInfo} [Teammate Added]`, IGN: mateNameInput, UID: mateUidInput })
+        });
+
+        showSection('success-screen');
+    } catch (err) { alert("Error: " + err.message); }
+});
+
