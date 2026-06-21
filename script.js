@@ -189,11 +189,7 @@ const uniqueMatchKey = `${gameName.replace(/\s+/g, '')}_${t.id}_${todayDate}`;
             <div id="action_${uniqueMatchKey}"><button class="join-btn" style="background:#444;" disabled>Processing...</button></div>
         `;
         container.appendChild(card);
-// Dynamic Fee aur Add Teammate button ko trigger karne ke liye calls
-if (typeof syncDynamicMatchFees === "function") syncDynamicMatchFees(uniqueMatchKey, t.fee || 10);
-if (typeof appendTeammateActionControls === "function") {
-    appendTeammateActionControls(uniqueMatchKey, isUserJoined, `${t.time} (${t.mode})`, t.fee || 10);
-}
+
         
         db.collection('tournaments').doc(uniqueMatchKey).onSnapshot((doc) => {
             let joinedCount = 0;
