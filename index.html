@@ -6,64 +6,73 @@
     <title>SK eSports Premium Platform</title>
     <link rel="stylesheet" href="style.css">
     
+    <!-- Core Firebase SDKs (Legacy Stable Version) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
+    <!-- NAVIGATION HEADER -->
     <header>
         <div class="logo-container">
             <h1 class="logo-text" onclick="showSection('game-selection')" style="cursor:pointer;">SK ESPORTS</h1>
         </div>
         <nav id="nav-controls">
+            <!-- Rules Button on Navbar -->
             <button class="auth-btn" onclick="openRulesModal()" style="background: #11141a; border: 1px solid #66fcf1; color: #66fcf1; margin-right: 5px;">📜 Rules</button>
             <button class="auth-btn" id="loginNavBtn" onclick="openAuthModal()">Login / Signup</button>
             <div id="userProfileHeader" class="hidden">
+                <!-- Coin Indicator linked to open Wallet Dashboard Pop-up -->
                 <span id="header-wallet" onclick="openWalletModal()" style="cursor: pointer; background: #1c232d; padding: 6px 12px; border-radius: 20px; border: 1px solid #ff4655; font-weight: bold;">🪙 <span id="user-coins">0</span> Coins</span>
                 <button class="logout-btn" onclick="logoutUser()">Logout</button>
             </div>
         </nav>
     </header>
 
+    <!-- OFFICIAL TOURNAMENT RULES MODAL POPUP -->
     <div id="rulesModal" class="modal-overlay hidden">
         <div class="modal-card" style="max-width: 500px; width: 92%; max-height: 85vh; overflow-y: auto; text-align: left;">
             <button class="close-modal" onclick="closeRulesModal()">×</button>
             <h2 style="color: #66fcf1; text-align: center; margin-bottom: 15px;">📜 SK eSports Official Rules</h2>
             
             <div style="line-height: 1.6; font-size: 13px; color: #fff;">
-                
+                <!-- Anti Cheat Section -->
                 <div style="background: #1a1114; padding: 10px; border-radius: 6px; border-left: 4px solid #ff4655; margin-bottom: 12px;">
                     <h3 style="color: #ff4655; margin: 0 0 5px 0; font-size: 14px;">🚫 1. Anti-Cheat & Fair Play Policy</h3>
                     <p style="margin: 0; color: #ccc;">Hacking, config modification, auto-aim, ya kisi bhi tarah ke third-party tools ka use strict banned hai. Agar koi player cheat karte pakda gaya, toh uska account immediate **Permanent Block** kar diya jayega aur koi refund nahi milega.</p>
                 </div>
 
+                <!-- Device Restriction -->
                 <div style="background: #11141a; padding: 10px; border-radius: 6px; border-left: 4px solid #66fcf1; margin-bottom: 12px;">
                     <h3 style="color: #66fcf1; margin: 0 0 5px 0; font-size: 14px;">📱 2. Allowed Devices</h3>
                     <p style="margin: 0; color: #ccc;">Sirf normal Mobile/Android/iOS devices allowed hain. **PC Emulators, Tablets, aur iPads strictly NOT allowed** hain. Agar aapne iPad se match join kiya toh point count nahi hoga.</p>
                 </div>
 
+                <!-- Room ID Timings -->
                 <div style="background: #11141a; padding: 10px; border-radius: 6px; border-left: 4px solid #2ecc71; margin-bottom: 12px;">
                     <h3 style="color: #2ecc71; margin: 0 0 5px 0; font-size: 14px;">🔑 3. Custom Room Timings</h3>
                     <p style="margin: 0; color: #ccc;">Match start hone se thik **15 minute pehle** aapke dashboard par Room ID aur Password live ho jayega. Sahi time par slot me baithna player ki zimmedari hai, late hone par game start ho jayega aur coin back nahi honge.</p>
                 </div>
 
+                <!-- Registration Rule -->
                 <div style="background: #11141a; padding: 10px; border-radius: 6px; border-left: 4px solid #f1c40f; margin-bottom: 12px;">
                     <h3 style="color: #f1c40f; margin: 0 0 5px 0; font-size: 14px;">🎖️ 4. Wrong IGN / UID Entry</h3>
                     <p style="margin: 0; color: #ccc;">Registration form me aapka **In-Game Name (IGN)** aur **UID** ekdum sahi hona chahiye. Agar custom room me kisi doosre naam ka player aaya, toh use kick kar diya jayega.</p>
                 </div>
 
+                <!-- Prize Disbursal -->
                 <div style="background: #11141a; padding: 10px; border-radius: 6px; border-left: 4px solid #9b59b6; margin-bottom: 5px;">
                     <h3 style="color: #9b59b6; margin: 0 0 5px 0; font-size: 14px;">💰 5. Payouts & Prize Distribution</h3>
-                    <p style="margin: 0; color: #ccc;">Match khatam hone ke baad admin match results verify karega. Verify hone ke baad win kiye gaye coins **2 ghante ke andar** player ke website Id me automatic add ho jayenge.</p>
+                    <p style="margin: 0; color: #ccc;">Match khatam hone ke baad admin match results verify karega. Verify hone ke baad win kiye gaye coins **2 ghante ke andar** bache ke passbook me automatic add ho jayenge.</p>
                 </div>
-
             </div>
 
             <button onclick="closeRulesModal()" class="submit-btn" style="background: #66fcf1; color: #000; font-weight: bold; margin-top: 15px; width: 100%;">I Understand / Agree</button>
         </div>
     </div>
 
+    <!-- AUTH POPUP MODAL -->
     <div id="authModal" class="modal-overlay hidden">
         <div class="modal-card">
             <button class="close-modal" onclick="closeAuthModal()">×</button>
@@ -83,6 +92,7 @@
         </div>
     </div>
 
+    <!-- PREMIUM CUSTOM WALLET & HISTORY DASHBOARD MODAL -->
     <div id="walletModal" class="modal-overlay hidden">
         <div class="modal-card" style="max-width: 450px; width: 90%;">
             <button class="close-modal" onclick="closeWalletModal()">×</button>
@@ -116,6 +126,7 @@
         </div>
     </div>
 
+    <!-- CUSTOM JOIN MODAL (LEADER REGISTRATION) -->
     <div id="joinModal" class="modal-overlay hidden">
         <div class="modal-card">
             <button class="close-modal" onclick="closeJoinModal()">×</button>
@@ -135,8 +146,30 @@
         </div>
     </div>
 
+    <!-- CUSTOM ADD TEAMMATE MODAL (PAY-PER-SEAT ARRAYS ADDER) -->
+    <div id="addTeammateModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <button class="close-modal" onclick="closeTeammateModal()">×</button>
+            <h2 style="color: #66fcf1;">➕ Add Teammate</h2>
+            <p id="teammateModalInfo" style="color:#aaa; font-size:13px; margin-bottom:15px; text-align:center;">Per Player Entry Fee aapke wallet se kategi.</p>
+            <form id="addTeammateForm">
+                <div class="form-group">
+                    <label>Teammate In-Game Name (IGN):</label>
+                    <input type="text" id="mateGameName" required placeholder="e.g., SK_GAURAV_2">
+                </div>
+                <div class="form-group">
+                    <label>Teammate Character UID:</label>
+                    <input type="text" id="mateGameUID" required placeholder="e.g., 47122226444">
+                </div>
+                <button type="submit" class="submit-btn" style="background:#66fcf1; color:#000; font-weight:bold;">Pay Fee & Add Player</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN CORES -->
     <main class="container">
 
+        <!-- 1. GAME SELECTION SCREEN -->
         <section id="game-selection" class="interface-section active">
             <h1 class="main-title">SELECT YOUR GAME</h1>
             <p class="subtitle">Tournament me bhag lene ke liye game select karein</p>
@@ -152,6 +185,7 @@
             </div>
         </section>
 
+        <!-- 2. TOURNAMENT VIEW SECTION WITH NAVIGATION TABS -->
         <section id="tournament-view" class="interface-section">
             <button class="back-btn" onclick="showSection('game-selection')">← Back to Games</button>
             <h2 id="selected-game-title" class="section-title">Tournaments</h2>
@@ -166,6 +200,7 @@
             <div class="tournament-list" id="tournaments-container"></div>
         </section>
 
+        <!-- 3. WALLET INSUFFICIENT TOPUP SCREEN -->
         <section id="wallet-topup" class="interface-section">
             <button class="back-btn" onclick="showSection('tournament-view')">← Back</button>
             <div class="success-card" style="border-color: #ff4655; text-align: center;">
@@ -188,6 +223,7 @@
             </div>
         </section>
 
+        <!-- 4. SUCCESS CONTAINER -->
         <section id="success-screen" class="interface-section success-container">
             <div class="success-card">
                 <div class="success-icon">🎉</div>
