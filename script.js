@@ -1,6 +1,6 @@
 // Google Firebase App Configuration Matrix
 const firebaseConfig = {
-    apiKey: "AIzaSyB-C7Ks_lXWef1RMkUQBcPuhovSy72vaXM",
+    apiKey: "AIzaSyB-C7Ks_lXWef1RMkUQBcPuhovSy72veXM",
     authDomain: "sk-esports-90bf9.firebaseapp.com",
     projectId: "sk-esports-90bf9",
     storageBucket: "sk-esports-90bf9.appspot.com",
