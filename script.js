@@ -1,6 +1,6 @@
-// Google Firebase App Configuration Matrix
+// Google Firebase App Configuration Matrix (100% Match with Console)
 const firebaseConfig = {
-    apiKey: "AIzaSyB-C7Ks_lXWwf1RMkUQ8cPuhovSy72vveXM",
+    apiKey: "AIzaSyB-C7Ks_lXWef1RMkUQ8cPuhovSy72vveXM",
     authDomain: "sk-esports-90bf9.firebaseapp.com",
     projectId: "sk-esports-90bf9",
     storageBucket: "sk-esports-90bf9.firebasestorage.app",
@@ -9,8 +9,12 @@ const firebaseConfig = {
     measurementId: "G-KW6JG0E4TF"
 };
 
-firebase.initializeApp(firebaseConfig);
-
+// Forcefully initialize without crashing
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+} else {
+    firebase.app(); 
+}
 
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -58,7 +62,7 @@ function getDynamicTournaments() {
     return tournaments;
 }
 
-// Global Auth Engine State Registry (Crash-Proof Edition)
+// Global Auth Engine State Registry (Null-Safe & Direct)
 auth.onAuthStateChanged((user) => {
     const loginBtn = document.getElementById('loginNavBtn');
     const profileHeader = document.getElementById('userProfileHeader');
@@ -104,7 +108,7 @@ auth.onAuthStateChanged((user) => {
             }
         });
     } else {
-        if (loginBtn) loginBtn.classList.remove('hidden');
+        if (loginBtn) loginBtn.remove('hidden');
         if (profileHeader) profileHeader.classList.add('hidden');
         currentUserData = null;
     }
@@ -163,7 +167,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Checked inside async engine callback
+            // Evaluated inside reactive Firestore socket
         } else if (currentActiveTab !== status) {
             return;
         }
