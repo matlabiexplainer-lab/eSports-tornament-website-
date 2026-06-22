@@ -1,12 +1,12 @@
 // Google Firebase App Configuration Matrix
 const firebaseConfig = {
-    apiKey: "AIzaSyB-C7Ks_lXWef1RMkUQBcPuhovSy72veXM",
+    apiKey: "AIzaSyB-C7Ks_lXWwf1RMkUQ8cPuhovSy72vveXM",
     authDomain: "sk-esports-90bf9.firebaseapp.com",
     projectId: "sk-esports-90bf9",
-    storageBucket: "sk-esports-90bf9.appspot.com",
+    storageBucket: "sk-esports-90bf9.firebasestorage.app",
     messagingSenderId: "471222264434",
     appId: "1:471222264434:web:b54a25264d5b2ae70a58eb",
-    measurementId: "G-6W6JDGE4TF"
+    measurementId: "G-KW6JG0E4TF"
 };
 
 firebase.initializeApp(firebaseConfig);
