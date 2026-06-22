@@ -403,4 +403,105 @@ function syncDynamicMatchFees(uniqueMatchKey, defaultFee) {
 // JOIN FORM ACTIONS SUBMIT FOR LEADERS
 document.getElementById('joinForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const gameNameInput = document.getElementById('playerGameName').value.
+    const gameNameInput = document.getElementById('playerGameName').value.trim();
+    const gameUidInput = document.getElementById('playerGameUID').value.trim();
+    closeJoinModal();
+
+    const uniqueMatchKey = currentSelection.currentMatchKey;
+    const tFee = currentSelection.fee;
+    const matchInfo = currentSelection.currentMatchInfo;
+    const userUID = auth.currentUser.uid;
+    const userMobile = currentUserData.mobile;
+    const newBalance = currentUserData.coins - tFee;
+    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
+
+    try {
+        await db.collection('tournaments').doc(uniqueMatchKey).set({
+            players: firebase.firestore.FieldValue.arrayUnion({ 
+                uid: userUID, mobile: userMobile, gameName: gameNameInput, gameUID: gameUidInput, kills: 0, prize: "0 Coins"
+            })
+        }, { merge: true });
+
+        await db.collection('users').doc(userUID).set({ 
+            coins: newBalance,
+            history: firebase.firestore.FieldValue.arrayUnion({
+                title: `${currentSelection.game} (${matchInfo})`, amount: tFee, type: "Debited", date: txDate
+            })
+        }, { merge: true });
+        
+        await fetch(FORMSPREE_URL, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Mobile: userMobile, Match: matchInfo, IGN: gameNameInput, UID: gameUidInput })
+        });
+        showSection('success-screen');
+    } catch (err) { alert("Error: " + err.message); }
+});
+
+// ADD TEAMMATE FORM SUBMIT (Pay-Per-Seat Logic integration)
+document.getElementById('addTeammateForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const mateNameInput = document.getElementById('mateGameName').value.trim();
+    const mateUidInput = document.getElementById('mateGameUID').value.trim();
+    closeTeammateModal();
+
+    const uniqueMatchKey = currentSelection.currentMatchKey;
+    const tFee = currentSelection.fee;
+    const matchInfo = currentSelection.currentMatchInfo;
+    const leaderUID = auth.currentUser.uid;
+    const leaderMobile = currentUserData.mobile;
+    const newLeaderBalance = currentUserData.coins - tFee;
+    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
+
+    try {
+        await db.collection('tournaments').doc(uniqueMatchKey).set({
+            players: firebase.firestore.FieldValue.arrayUnion({ 
+                uid: `${leaderUID}_mate_${Date.now()}`, mobile: leaderMobile, gameName: mateNameInput, gameUID: mateUidInput, kills: 0, prize: "0 Coins"
+            })
+        }, { merge: true });
+
+        await db.collection('users').doc(leaderUID).set({ 
+            coins: newLeaderBalance,
+            history: firebase.firestore.FieldValue.arrayUnion({
+                title: `Teammate: ${mateNameInput} (${matchInfo})`, amount: tFee, type: "Debited", date: txDate
+            })
+        }, { merge: true });
+        
+        await fetch(FORMSPREE_URL, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Mobile: leaderMobile, Match: `${matchInfo} [Teammate]`, IGN: mateNameInput, UID: mateUidInput })
+        });
+        showSection('success-screen');
+    } catch (err) { alert("Error: " + err.message); }
+});
+
+// AUTH FLOW MANAGEMENT CONTROL
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    document.getElementById('auth-title').innerText = isSignUpMode ? "Register on SK eSports" : "Login to SK eSports";
+    document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
+    document.querySelector('.toggle-auth-text').innerHTML = isSignUpMode ? 
+        `Pehle se account hai? <a href="#" onclick="toggleAuthMode()">Login Karein</a>` : 
+        `Account nahi hai? <a href="#" onclick="toggleAuthMode()">Signup/Register Karein</a>`;
+}
+
+document.getElementById('authForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const inputVal = document.getElementById('authIdentifier').value.trim();
+    const pass = document.getElementById('authPassword').value;
+    const dynamicEmail = inputVal.includes('@') ? inputVal : `${inputVal}@skesports.com`;
+    closeAuthModal();
+
+    try {
+        if (isSignUpMode) {
+            const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
+            await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
+            alert("Registered Successfully! Balance: 0 Coins.");
+        } else {
+            await auth.signInWithEmailAndPassword(dynamicEmail, pass);
+        }
+    } catch (err) { alert("Auth Error: " + err.message); }
+});
+
+function logoutUser() { auth.signOut().then(() => location.reload());
