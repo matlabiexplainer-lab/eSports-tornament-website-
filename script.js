@@ -59,13 +59,15 @@ function getDynamicTournaments() {
     return tournaments;
 }
 
-// Global Auth Engine State Registry
+// Global Auth Engine State Registry (Crash-Proof Edition)
 auth.onAuthStateChanged((user) => {
     const loginBtn = document.getElementById('loginNavBtn');
     const profileHeader = document.getElementById('userProfileHeader');
+    
     if (user) {
         if (loginBtn) loginBtn.classList.add('hidden');
         if (profileHeader) profileHeader.classList.remove('hidden');
+        
         db.collection('users').doc(user.uid).onSnapshot((doc) => {
             if (doc.exists) {
                 currentUserData = doc.data();
@@ -110,7 +112,10 @@ auth.onAuthStateChanged((user) => {
 });
 
 function checkAuthAndSelect(gameName) {
-    if (!auth.currentUser) { openAuthModal(); return; }
+    if (!auth.currentUser) { 
+        openAuthModal(); 
+        return; 
+    }
     currentSelection.game = gameName;
     switchMatchTab('upcoming');
 }
@@ -134,7 +139,6 @@ function switchMatchTab(tabName) {
     }
     renderMatchesList();
 }
-
 // RENDERING TOURNAMENTS LOGIC
 function renderMatchesList() {
     const gameName = currentSelection.game;
@@ -256,12 +260,14 @@ function renderMatchesList() {
             const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
             const timeDifference = matchTotalMinutes - currentTotalMinutes;
 
-            const roomContainer = document.getElementById(`room-box-${uniqueMatchKey}`);
+            const roomContainer = document.getElementById('room-box-' + uniqueMatchKey);
             if (roomContainer) {
                 if (status === "upcoming" && isUserJoined && timeDifference <= 15) {
                     roomContainer.classList.remove('hidden');
-                    document.getElementById(`roomIdVal-${uniqueMatchKey}`).innerText = databaseRoomId;
-                    document.getElementById(`roomPassVal-${uniqueMatchKey}`).innerText = databaseRoomPass;
+                    const rId = document.getElementById(`roomIdVal-${uniqueMatchKey}`);
+                    const rPs = document.getElementById(`roomPassVal-${uniqueMatchKey}`);
+                    if (rId) rId.innerText = databaseRoomId;
+                    if (rPs) rPs.innerText = databaseRoomPass;
                 } else {
                     roomContainer.classList.add('hidden');
                 }
@@ -305,7 +311,7 @@ function renderMatchesList() {
                 }
             }
 
-            // Action triggers render blocks (Includes Dynamic Teammate Add Button For Groups)
+            // Action triggers render blocks
             let actionBtnHtml = "";
             if (status === "past") {
                 actionBtnHtml = `<button class="join-btn" style="background:#333; color:#777;" disabled>Match Ended</button>`;
@@ -364,12 +370,16 @@ function openJoinModal(matchKey, defaultFee, matchInfo) {
         currentSelection.fee = finalFee;
 
         if (currentUserData.coins < finalFee) { showSection('wallet-topup'); return; }
-        document.getElementById('playerGameName').value = "";
-        document.getElementById('playerGameUID').value = "";
-        document.getElementById('joinModal').classList.remove('hidden');
+        const nameField = document.getElementById('playerGameName');
+        const uidField = document.getElementById('playerGameUID');
+        const modalEl = document.getElementById('joinModal');
+        if (nameField) nameField.value = "";
+        if (uidField) uidField.value = "";
+        if (modalEl) modalEl.classList.remove('hidden');
     }).catch(() => {
         if (currentUserData.coins < defaultFee) { showSection('wallet-topup'); return; }
-        document.getElementById('joinModal').classList.remove('hidden');
+        const modalEl = document.getElementById('joinModal');
+        if (modalEl) modalEl.classList.remove('hidden');
     });
 }
 
@@ -380,9 +390,12 @@ function openTeammateModal(matchKey, fee, matchInfo) {
     currentSelection.fee = fee;
     currentSelection.currentMatchInfo = matchInfo;
 
-    document.getElementById('mateGameName').value = "";
-    document.getElementById('mateGameUID').value = "";
-    document.getElementById('addTeammateModal').classList.remove('hidden');
+    const nameField = document.getElementById('mateGameName');
+    const uidField = document.getElementById('mateGameUID');
+    const modalEl = document.getElementById('addTeammateModal');
+    if (nameField) nameField.value = "";
+    if (uidField) uidField.value = "";
+    if (modalEl) modalEl.classList.remove('hidden');
 }
 
 // CONSOLE REAL-TIME FEE SYNCHRONIZATION
@@ -400,108 +413,122 @@ function syncDynamicMatchFees(uniqueMatchKey, defaultFee) {
     });
 }
 
-// JOIN FORM ACTIONS SUBMIT FOR LEADERS
-document.getElementById('joinForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const gameNameInput = document.getElementById('playerGameName').value.trim();
-    const gameUidInput = document.getElementById('playerGameUID').value.trim();
-    closeJoinModal();
+// FORM SUBMISSIONS WITH NULL CHECKS
+const jForm = document.getElementById('joinForm');
+if (jForm) {
+    jForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const gameNameInput = document.getElementById('playerGameName').value.trim();
+        const gameUidInput = document.getElementById('playerGameUID').value.trim();
+        closeJoinModal();
 
-    const uniqueMatchKey = currentSelection.currentMatchKey;
-    const tFee = currentSelection.fee;
-    const matchInfo = currentSelection.currentMatchInfo;
-    const userUID = auth.currentUser.uid;
-    const userMobile = currentUserData.mobile;
-    const newBalance = currentUserData.coins - tFee;
-    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
+        const uniqueMatchKey = currentSelection.currentMatchKey;
+        const tFee = currentSelection.fee;
+        const matchInfo = currentSelection.currentMatchInfo;
+        const userUID = auth.currentUser.uid;
+        const userMobile = currentUserData.mobile;
+        const newBalance = currentUserData.coins - tFee;
+        const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
 
-    try {
-        await db.collection('tournaments').doc(uniqueMatchKey).set({
-            players: firebase.firestore.FieldValue.arrayUnion({ 
-                uid: userUID, mobile: userMobile, gameName: gameNameInput, gameUID: gameUidInput, kills: 0, prize: "0 Coins"
-            })
-        }, { merge: true });
+        try {
+            await db.collection('tournaments').doc(uniqueMatchKey).set({
+                players: firebase.firestore.FieldValue.arrayUnion({ 
+                    uid: userUID, mobile: userMobile, gameName: gameNameInput, gameUID: gameUidInput, kills: 0, prize: "0 Coins"
+                })
+            }, { merge: true });
 
-        await db.collection('users').doc(userUID).set({ 
-            coins: newBalance,
-            history: firebase.firestore.FieldValue.arrayUnion({
-                title: `${currentSelection.game} (${matchInfo})`, amount: tFee, type: "Debited", date: txDate
-            })
-        }, { merge: true });
-        
-        await fetch(FORMSPREE_URL, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Mobile: userMobile, Match: matchInfo, IGN: gameNameInput, UID: gameUidInput })
-        });
-        showSection('success-screen');
-    } catch (err) { alert("Error: " + err.message); }
-});
-
-// ADD TEAMMATE FORM SUBMIT (Pay-Per-Seat Logic integration)
-document.getElementById('addTeammateForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const mateNameInput = document.getElementById('mateGameName').value.trim();
-    const mateUidInput = document.getElementById('mateGameUID').value.trim();
-    closeTeammateModal();
-
-    const uniqueMatchKey = currentSelection.currentMatchKey;
-    const tFee = currentSelection.fee;
-    const matchInfo = currentSelection.currentMatchInfo;
-    const leaderUID = auth.currentUser.uid;
-    const leaderMobile = currentUserData.mobile;
-    const newLeaderBalance = currentUserData.coins - tFee;
-    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
-
-    try {
-        await db.collection('tournaments').doc(uniqueMatchKey).set({
-            players: firebase.firestore.FieldValue.arrayUnion({ 
-                uid: `${leaderUID}_mate_${Date.now()}`, mobile: leaderMobile, gameName: mateNameInput, gameUID: mateUidInput, kills: 0, prize: "0 Coins"
-            })
-        }, { merge: true });
-
-        await db.collection('users').doc(leaderUID).set({ 
-            coins: newLeaderBalance,
-            history: firebase.firestore.FieldValue.arrayUnion({
-                title: `Teammate: ${mateNameInput} (${matchInfo})`, amount: tFee, type: "Debited", date: txDate
-            })
-        }, { merge: true });
-        
-        await fetch(FORMSPREE_URL, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Mobile: leaderMobile, Match: `${matchInfo} [Teammate]`, IGN: mateNameInput, UID: mateUidInput })
-        });
-        showSection('success-screen');
-    } catch (err) { alert("Error: " + err.message); }
-});
-
-// AUTH FLOW MANAGEMENT CONTROL
-function toggleAuthMode() {
-    isSignUpMode = !isSignUpMode;
-    document.getElementById('auth-title').innerText = isSignUpMode ? "Register on SK eSports" : "Login to SK eSports";
-    document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
-    document.querySelector('.toggle-auth-text').innerHTML = isSignUpMode ? 
-        `Pehle se account hai? <a href="#" onclick="toggleAuthMode()">Login Karein</a>` : 
-        `Account nahi hai? <a href="#" onclick="toggleAuthMode()">Signup/Register Karein</a>`;
+            await db.collection('users').doc(userUID).set({ 
+                coins: newBalance,
+                history: firebase.firestore.FieldValue.arrayUnion({
+                    title: `${currentSelection.game} (${matchInfo})`, amount: tFee, type: "Debited", date: txDate
+                })
+            }, { merge: true });
+            
+            await fetch(FORMSPREE_URL, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Mobile: userMobile, Match: matchInfo, IGN: gameNameInput, UID: gameUidInput })
+            });
+            showSection('success-screen');
+        } catch (err) { alert("Error: " + err.message); }
+    });
 }
 
-document.getElementById('authForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const inputVal = document.getElementById('authIdentifier').value.trim();
-    const pass = document.getElementById('authPassword').value;
-    const dynamicEmail = inputVal.includes('@') ? inputVal : `${inputVal}@skesports.com`;
-    closeAuthModal();
+const tForm = document.getElementById('addTeammateForm');
+if (tForm) {
+    tForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const mateNameInput = document.getElementById('mateGameName').value.trim();
+        const mateUidInput = document.getElementById('mateGameUID').value.trim();
+        closeTeammateModal();
 
-    try {
-        if (isSignUpMode) {
-            const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
-            await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
-            alert("Registered Successfully! Balance: 0 Coins.");
-        } else {
-            await auth.signInWithEmailAndPassword(dynamicEmail, pass);
-        }
-    } catch (err) { alert("Auth Error: " + err.message); }
-});
+        const uniqueMatchKey = currentSelection.currentMatchKey;
+        const tFee = currentSelection.fee;
+        const matchInfo = currentSelection.currentMatchInfo;
+        const leaderUID = auth.currentUser.uid;
+        const leaderMobile = currentUserData.mobile;
+        const newLeaderBalance = currentUserData.coins - tFee;
+        const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
 
-function logoutUser() { auth.signOut().then(() => location.reload());
+        try {
+            await db.collection('tournaments').doc(uniqueMatchKey).set({
+                players: firebase.firestore.FieldValue.arrayUnion({ 
+                    uid: `${leaderUID}_mate_${Date.now()}`, mobile: leaderMobile, gameName: mateNameInput, gameUID: mateUidInput, kills: 0, prize: "0 Coins"
+                })
+            }, { merge: true });
+
+            await db.collection('users').doc(leaderUID).set({ 
+                coins: newLeaderBalance,
+                history: firebase.firestore.FieldValue.arrayUnion({
+                    title: `Teammate: ${mateNameInput} (${matchInfo})`, amount: tFee, type: "Debited", date: txDate
+                })
+            }, { merge: true });
+            
+            await fetch(FORMSPREE_URL, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Mobile: leaderMobile, Match: `${matchInfo} [Teammate]`, IGN: mateNameInput, UID: mateUidInput })
+            });
+            showSection('success-screen');
+        } catch (err) { alert("Error: " + err.message); }
+    });
+}
+
+// AUTH FLOW CONTROLS
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    const aTitle = document.getElementById('auth-title');
+    const aBtn = document.getElementById('authSubmitBtn');
+    const toggleTxt = document.querySelector('.toggle-auth-text');
+    
+    if (aTitle) aTitle.innerText = isSignUpMode ? "Register on SK eSports" : "Login to SK eSports";
+    if (aBtn) aBtn.innerText = isSignUpMode ? "Register Account" : "Login";
+    if (toggleTxt) {
+        toggleTxt.innerHTML = isSignUpMode ? 
+            `Pehle se account hai? <a href="#" onclick="toggleAuthMode()">Login Karein</a>` : 
+            `Account nahi hai? <a href="#" onclick="toggleAuthMode()">Signup/Register Karein</a>`;
+    }
+}
+
+const aForm = document.getElementById('authForm');
+if (aForm) {
+    aForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const inputVal = document.getElementById('authIdentifier').value.trim();
+        const pass = document.getElementById('authPassword').value;
+        const dynamicEmail = inputVal.includes('@') ? inputVal : `${inputVal}@skesports.com`;
+        closeAuthModal();
+
+        try {
+            if (isSignUpMode) {
+                const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
+                await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
+                alert("Registered Successfully! Balance: 0 Coins.");
+            } else {
+                await auth.signInWithEmailAndPassword(dynamicEmail, pass);
+            }
+        } catch (err) { alert("Auth Error: " + err.message); }
+    });
+}
+
+function logoutUser() { auth.signOut().then(() => location.reload()); }
