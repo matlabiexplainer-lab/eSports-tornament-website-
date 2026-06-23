@@ -501,16 +501,52 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     const pass = document.getElementById('authPassword').value;
     const dynamicEmail = inputVal.includes('@') ? inputVal : `${inputVal}@skesports.com`;
 
+    // Loading State Popup
+    Swal.fire({
+        title: 'Processing...',
+        text: 'Please wait a moment',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); },
+        background: '#141a24',
+        color: '#fff'
+    });
+
     try {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
             await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
-            alert("Registered! Balance: 0 Coins.");
+            
+            // Premium Success UI for Registration
+            Swal.fire({
+                icon: 'success',
+                title: 'Welcome to SK eSports! 🎉',
+                html: '<p style="color: #66fcf1; font-weight: bold;">Registered Successfully!</p><p>Starting Balance: 🪙 0 Coins</p>',
+                background: '#141a24',
+                color: '#fff',
+                confirmButtonColor: '#ff4655'
+            });
         } else {
             await auth.signInWithEmailAndPassword(dynamicEmail, pass);
+            Swal.close(); // Login hone par direct close ho jata hai
         }
         closeAuthModal();
-    } catch (err) { alert(err.message); }
+    } catch (err) {
+        // Clean and Custom Error Message Mapping
+        let friendlyMessage = err.message;
+        if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
+            friendlyMessage = "Incorrect Mobile/Email or Password. Please try again or create a new account!";
+        }
+
+        // Premium Error UI
+        Swal.fire({
+            icon: 'error',
+            title: 'Authentication Failed',
+            text: friendlyMessage,
+            background: '#141a24',
+            color: '#fff',
+            confirmButtonColor: '#ff4655'
+        });
+    }
 });
 
 function toggleAuthMode() {
