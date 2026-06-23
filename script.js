@@ -41,20 +41,53 @@ function getDynamicTournaments() {
             let modeIndex = currentId % 3;
             let currentMode = modes[modeIndex];
             
+                        // Alternating slot size for Solo rooms (50 members vs 30 members)
+            let maxSlots = 50;
+            if (currentMode === "Solo") {
+                maxSlots = (currentId % 2 === 0) ? 30 : 50;
+            } else if (currentMode === "Duo") {
+                maxSlots = 50; // 25 Teams
+            } else if (currentMode === "Squad") {
+                maxSlots = 48; // 12 Teams
+            }
+
+            let fee = 10;
+            let perKillReward = "🪙 3 Coins";
+            let topRankReward = "🪙 10 Coins";
+            let winnerReward = "🪙 100 Coins";
+
+            if (currentMode === "Solo") {
+                fee = 10;
+                perKillReward = (maxSlots === 50) ? "🪙 3 Coins" : "🪙 2 Coins";
+                topRankReward = "🪙 10 Coins (Rank 2-10)";
+                winnerReward = "🪙 100 Coins";
+            } else if (currentMode === "Duo") {
+                fee = 15;
+                perKillReward = "🪙 5 Coins";
+                topRankReward = "🪙 20 Coins (Top 5 Teams)";
+                winnerReward = "🪙 200 Coins";
+            } else if (currentMode === "Squad") {
+                fee = 20; 
+                perKillReward = "🪙 5 Coins";
+                topRankReward = "🪙 20 Coins (Top 10 Teams)";
+                winnerReward = "🪙 400 Coins";
+            }
+
             tournaments.push({
                 id: `match_${hour}_${mins}`,
                 time: matchTime,
                 hour24: hour,
                 minNum: parseInt(mins),
                 mode: currentMode,
-                fee: currentMode === "Solo" ? 10 : (currentMode === "Duo" ? 20 : 40),
+                fee: fee,
                 rewards: {
-                    perKill: currentMode === "Solo" ? "🪙 5 Coins" : "🪙 3 Coins",
-                    top10: currentMode === "Solo" ? "🪙 20 Coins" : "🪙 40 Coins",
-                    winner: currentMode === "Solo" ? "🪙 100 Coins" : (currentMode === "Duo" ? "🪙 200 Coins" : "🪙 400 Coins")
+                    perKill: perKillReward,
+                    top10: topRankReward,
+                    winner: winnerReward
                 },
-                maxSlots: currentMode === "Solo" ? 50 : (currentMode === "Duo" ? 50 : 25)
+                maxSlots: maxSlots
             });
+
             currentId++;
         }
     }
