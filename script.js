@@ -400,14 +400,18 @@ function closeAuthModal() { document.getElementById('authModal').classList.add('
 function closeTeammateModal() { const m = document.getElementById('addTeammateModal'); if(m) m.classList.add('hidden'); }
 
 function openJoinModal(matchKey, fee, matchInfo) {
-    if (!currentUserData) return;
+    if (!auth.currentUser || !currentUserData) { 
+        openAuthModal(); 
+        return; 
+    }
     if (currentUserData.coins < fee) { showSection('wallet-topup'); return; }
     currentSelection.currentMatchKey = matchKey;
     currentSelection.fee = fee;
     currentSelection.currentMatchInfo = matchInfo;
     document.getElementById('playerGameName').value = "";
     document.getElementById('playerGameUID').value = "";
-    document.getElementById('joinModal').classList.remove('hidden');
+    const m = document.getElementById('joinModal');
+    if(m) m.classList.remove('hidden');
 }
 
 function openTeammateModal(matchKey, fee, matchInfo) {
