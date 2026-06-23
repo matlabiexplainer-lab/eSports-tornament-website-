@@ -1,5 +1,5 @@
 // ==========================================================================
-// 🛠️ SK ESPORTS OFFICIAL CLIENT ENGINE - PART 1 (CORE CONFIG & AUTH)
+// 🛠️ SK ESPORTS OFFICIAL CLIENT ENGINE - PART 1 (UPDATED REWARDS MATRIX)
 // ==========================================================================
 
 const firebaseConfig = {
@@ -24,7 +24,7 @@ let currentUserData = null;
 let isSignUpMode = false;
 let currentActiveTab = "upcoming";
 
-// --- GENERATE SCHEDULE ARRAYS ---
+// --- NEW REWARDS MATRIX SCHEDULE ENGINE ---
 function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
@@ -41,19 +41,51 @@ function getDynamicTournaments() {
             let modeIndex = currentId % 3;
             let currentMode = modes[modeIndex];
             
+            // Alternating slot size for Solo rooms (50 members vs 30 members)
+            let maxSlots = 50;
+            if (currentMode === "Solo") {
+                maxSlots = (currentId % 2 === 0) ? 30 : 50;
+            } else if (currentMode === "Duo") {
+                maxSlots = 50; // 25 Teams
+            } else if (currentMode === "Squad") {
+                maxSlots = 48; // 12 Teams
+            }
+
+            let fee = 10;
+            let perKillReward = "🪙 3 Coins";
+            let topRankReward = "🪙 10 Coins";
+            let winnerReward = "🪙 100 Coins";
+
+            if (currentMode === "Solo") {
+                fee = 10;
+                perKillReward = (maxSlots === 50) ? "🪙 3 Coins" : "🪙 2 Coins";
+                topRankReward = "🪙 10 Coins (Rank 2-10)";
+                winnerReward = "🪙 100 Coins";
+            } else if (currentMode === "Duo") {
+                fee = 15;
+                perKillReward = "🪙 5 Coins";
+                topRankReward = "🪙 20 Coins (Top 5 Teams)";
+                winnerReward = "🪙 200 Coins";
+            } else if (currentMode === "Squad") {
+                fee = 20; // Per player
+                perKillReward = "🪙 5 Coins";
+                topRankReward = "🪙 20 Coins (Top 10 Teams)";
+                winnerReward = "🪙 400 Coins";
+            }
+            
             tournaments.push({
                 id: `match_${hour}_${mins}`,
                 time: matchTime,
                 hour24: hour,
                 minNum: parseInt(mins),
                 mode: currentMode,
-                fee: currentMode === "Solo" ? 10 : (currentMode === "Duo" ? 20 : 40),
+                fee: fee,
                 rewards: {
-                    perKill: currentMode === "Solo" ? "🪙 5 Coins" : "🪙 3 Coins",
-                    top10: currentMode === "Solo" ? "🪙 20 Coins" : "🪙 40 Coins",
-                    winner: currentMode === "Solo" ? "🪙 100 Coins" : (currentMode === "Duo" ? "🪙 200 Coins" : "🪙 400 Coins")
+                    perKill: perKillReward,
+                    top10: topRankReward,
+                    winner: winnerReward
                 },
-                maxSlots: currentMode === "Solo" ? 50 : (currentMode === "Duo" ? 50 : 25)
+                maxSlots: maxSlots
             });
             currentId++;
         }
@@ -61,7 +93,6 @@ function getDynamicTournaments() {
     return tournaments;
 }
 
-// --- GLOBAL AUTH ENGINE STATE REGISTRY ---
 auth.onAuthStateChanged((user) => {
     const loginBtn = document.getElementById('loginNavBtn');
     const profileHeader = document.getElementById('userProfileHeader');
@@ -76,7 +107,6 @@ auth.onAuthStateChanged((user) => {
                 const modalCoin = document.getElementById('modal-user-coins');
                 if(modalCoin) modalCoin.innerText = currentUserData.coins || 0;
                 
-                // Real-time Wallet History / Passbook Render
                 const historyTableBody = document.getElementById('wallet-history-rows');
                 if (historyTableBody) {
                     if (!currentUserData.history || currentUserData.history.length === 0) {
@@ -137,7 +167,7 @@ function switchMatchTab(tabName) {
     renderMatchesList();
 }
 // ==========================================================================
-// 🛠️ SK ESPORTS OFFICIAL CLIENT ENGINE - PART 2 (RENDERING & LOGIC)
+// 🛠️ SK ESPORTS OFFICIAL CLIENT ENGINE - PART 2 (RENDERING & HANDLERS)
 // ==========================================================================
 
 function renderMatchesList() {
@@ -164,7 +194,7 @@ function renderMatchesList() {
         }
 
         if (currentActiveTab === "my_joined") {
-            // Managed inside dynamic listener mapping
+            // Dynamic evaluation mapping hook
         } else if (currentActiveTab !== status) {
             return; 
         }
@@ -176,7 +206,7 @@ function renderMatchesList() {
         card.id = `card_${uniqueMatchKey}`;
         card.innerHTML = `
             <div class="t-info" onclick="toggleDetailsBox('${t.id}')">
-                <h3>⏰ Time: ${t.time} (${t.mode})</h3>
+                <h3>⏰ Time: ${t.time} (${t.mode} - ${t.maxSlots} Plrs)</h3>
                 <p style="font-size:12px; color:#aaa; margin:4px 0;">🗺️ Map: ${mapName} | Tap for Rewards List</p>
                 <div class="t-details">
                     <span>🪙 Entry: ${t.fee} Coins</span>
@@ -214,7 +244,7 @@ function renderMatchesList() {
 
                 <div id="details-${t.id}" class="hidden" style="background:#0d1117; padding:10px; border-radius:6px; margin-top:10px; border-left:3px solid #ff4655;">
                     <p style="margin:4px 0; font-size:13px;">🎯 Winner/Booyah: <strong>${t.rewards.winner}</strong></p>
-                    <p style="margin:4px 0; font-size:13px;">🎖️ Top 10 Finisher: <strong>${t.rewards.top10}</strong></p>
+                    <p style="margin:4px 0; font-size:13px;">🎖️ Placement Reward: <strong>${t.rewards.top10}</strong></p>
                     <p style="margin:4px 0; font-size:13px;">💀 Per Kill Reward: <strong>${t.rewards.perKill}</strong></p>
                 </div>
             </div>
@@ -340,8 +370,8 @@ function closeWalletModal() { const m = document.getElementById('walletModal'); 
 function openRulesModal() { const m = document.getElementById('rulesModal'); if(m) m.classList.remove('hidden'); }
 function closeRulesModal() { const m = document.getElementById('rulesModal'); if(m) m.classList.add('hidden'); }
 function closeJoinModal() { document.getElementById('joinModal').classList.add('hidden'); }
-function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
-function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
+function openAuthModal() { document.getElementById('authModal'); if(m) m.classList.remove('hidden'); }
+function closeAuthModal() { document.getElementById('authModal'); if(m) m.classList.add('hidden'); }
 function closeTeammateModal() { const m = document.getElementById('addTeammateModal'); if(m) m.classList.add('hidden'); }
 
 function openJoinModal(matchKey, fee, matchInfo) {
@@ -464,4 +494,4 @@ function toggleAuthMode() {
     document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
 }
 function logoutUser() { auth.signOut().then(() => location.reload()); }
-                
+                        
