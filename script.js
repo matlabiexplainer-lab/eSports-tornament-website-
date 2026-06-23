@@ -378,3 +378,57 @@ function toggleAuthMode() {
 }
 function logoutUser() { auth.signOut().then(() => location.reload()); }
     
+
+// === DO NOT TOUCH UPPER CODE - ADD THIS AT THE VERY BOTTOM ===
+
+// 1. Snapshot Listener Extender to track real-time wallet sync & register history array
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        db.collection('users').doc(user.uid).onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                const modalCoin = document.getElementById('modal-user-coins');
+                if(modalCoin) modalCoin.innerText = data.coins || 0;
+                
+                // Trigger dynamic history table render
+                const historyTableBody = document.getElementById('wallet-history-rows');
+                if (historyTableBody) {
+                    if (!data.history || data.history.length === 0) {
+                        historyTableBody.innerHTML = `<tr><td colspan="2" style="padding: 10px; color: #aaa; text-align: center;">No transaction history found.</td></tr>`;
+                    } else {
+                        let rowsHtml = "";
+                        let reversedHistory = [...data.history].reverse();
+                        reversedHistory.forEach(tx => {
+                            let typeColor = tx.type === "Deposit" || tx.type === "Won" ? "#2ecc71" : "#ff4655";
+                            let prefix = tx.type === "Deposit" || tx.type === "Won" ? "+" : "-";
+                            rowsHtml += `
+                                <tr style="border-bottom: 1px solid #1c232d;">
+                                    <td style="padding: 8px 4px;">
+                                        <div style="font-weight: bold; color: #fff;">${tx.title || 'Match Entry'}</div>
+                                        <div style="font-size: 10px; color: #666;">${tx.date || ''}</div>
+                                    </td>
+                                    <td style="padding: 8px 4px; text-align: right; font-weight: bold; color: ${typeColor};">
+                                        ${prefix}🪙${tx.amount}
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        historyTableBody.innerHTML = rowsHtml;
+                    }
+                }
+            }
+        });
+    }
+});
+
+// 2. Open / Close triggers for custom premium wallet dashboard popup
+function openWalletModal() {
+    if (!auth.currentUser) return;
+    const modal = document.getElementById('walletModal');
+    if(modal) modal.classList.remove('hidden');
+}
+
+function closeWalletModal() {
+    const modal = document.getElementById('walletModal');
+    if(modal) modal.classList.add('hidden');
+}
