@@ -661,3 +661,74 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
         showSection('success-screen');
     } catch (err) { alert("Error: " + err.message); }
 });
+// --- TEAMMATE EXTENSION ENGINE (ADD AT THE VERY BOTTOM) ---
+
+// 1. Open Teammate Modal Trigger
+function openTeammateModal(matchKey, fee, matchInfo) {
+    if (!currentUserData) return;
+    if (currentUserData.coins < fee) { showSection('wallet-topup'); return; }
+    currentSelection.currentMatchKey = matchKey;
+    currentSelection.fee = fee;
+    currentSelection.currentMatchInfo = matchInfo;
+
+    const nameField = document.getElementById('mateGameName');
+    const uidField = document.getElementById('mateGameUID');
+    const modalEl = document.getElementById('addTeammateModal');
+    if (nameField) nameField.value = "";
+    if (uidField) uidField.value = "";
+    if (modalEl) modalEl.classList.remove('hidden');
+}
+
+function closeTeammateModal() {
+    const modalEl = document.getElementById('addTeammateModal');
+    if (modalEl) modalEl.classList.add('hidden');
+}
+
+// 2. Submit Teammate Form to Firebase
+const teammateFormEl = document.getElementById('addTeammateForm');
+if (teammateFormEl) {
+    teammateFormEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const mateNameInput = document.getElementById('mateGameName').value.trim();
+        const mateUidInput = document.getElementById('mateGameUID').value.trim();
+        closeTeammateModal();
+
+        const uniqueMatchKey = currentSelection.currentMatchKey;
+        const tFee = currentSelection.fee;
+        const matchInfo = currentSelection.currentMatchInfo;
+        const leaderUID = auth.currentUser.uid;
+        const leaderMobile = currentUserData.mobile;
+        const newLeaderBalance = currentUserData.coins - tFee;
+        const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
+
+        try {
+            // Add mate to tournament roster under unique sub-id
+            await db.collection('tournaments').doc(uniqueMatchKey).set({
+                players: firebase.firestore.FieldValue.arrayUnion({ 
+                    uid: `${leaderUID}_mate_${Date.now()}`, 
+                    mobile: leaderMobile, 
+                    gameName: mateNameInput, 
+                    gameUID: mateUidInput, 
+                    kills: 0, 
+                    prize: "0 Coins"
+                })
+            }, { merge: true });
+
+            // Deduct entry fee from Leader wallet
+            await db.collection('users').doc(leaderUID).set({ 
+                coins: newLeaderBalance,
+                history: firebase.firestore.FieldValue.arrayUnion({
+                    title: `Teammate: ${mateNameInput} (${matchInfo})`, amount: tFee, type: "Debited", date: txDate
+                })
+            }, { merge: true });
+            
+            // Push notification data to Formspree sheet
+            await fetch(FORMSPREE_URL, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Mobile: leaderMobile, Match: `${matchInfo} [Teammate]`, IGN: mateNameInput, UID: mateUidInput })
+            });
+            showSection('success-screen');
+        } catch (err) { alert("Error: " + err.message); }
+    });
+}
