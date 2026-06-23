@@ -379,9 +379,10 @@ function toggleAuthMode() {
 function logoutUser() { auth.signOut().then(() => location.reload()); }
     
 
-// === DO NOT TOUCH UPPER CODE - ADD THIS AT THE VERY BOTTOM ===
 
-// 1. Snapshot Listener Extender to track real-time wallet sync & register history array
+// === ISS CODE KO SCRIPT.JS KE SABSE NICHE (END MEIN) WAPAS PASTE KAREIN ===
+
+// 1. AUTOMATIC REAL-TIME WALLET POPUP SYNC & PASSBOOK RENDERING
 auth.onAuthStateChanged((user) => {
     if (user) {
         db.collection('users').doc(user.uid).onSnapshot((doc) => {
@@ -390,7 +391,6 @@ auth.onAuthStateChanged((user) => {
                 const modalCoin = document.getElementById('modal-user-coins');
                 if(modalCoin) modalCoin.innerText = data.coins || 0;
                 
-                // Trigger dynamic history table render
                 const historyTableBody = document.getElementById('wallet-history-rows');
                 if (historyTableBody) {
                     if (!data.history || data.history.length === 0) {
@@ -421,14 +421,66 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// 2. Open / Close triggers for custom premium wallet dashboard popup
+// 2. OPEN & CLOSE WALLET MODAL PANEL
 function openWalletModal() {
     if (!auth.currentUser) return;
     const modal = document.getElementById('walletModal');
     if(modal) modal.classList.remove('hidden');
 }
 
+// 3. CLOSE WALLET MODAL PANEL
 function closeWalletModal() {
     const modal = document.getElementById('walletModal');
     if(modal) modal.classList.add('hidden');
 }
+
+// 4. AUTOMATIC HISTORY INJECTOR ON JOINING MATCH
+document.getElementById('joinForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const gameNameInput = document.getElementById('playerGameName').value.trim();
+    const gameUidInput = document.getElementById('playerGameUID').value.trim();
+    closeJoinModal();
+
+    const uniqueMatchKey = currentSelection.currentMatchKey;
+    const tFee = currentSelection.fee;
+    const matchInfo = currentSelection.currentMatchInfo;
+    const userUID = auth.currentUser.uid;
+    const userMobile = currentUserData.mobile;
+    const newBalance = currentUserData.coins - tFee;
+
+    // Automatic Date Generation for Passbook
+    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
+
+    try {
+        // A. Save player details inside tournament doc
+        await db.collection('tournaments').doc(uniqueMatchKey).set({
+            players: firebase.firestore.FieldValue.arrayUnion({ 
+                uid: userUID, 
+                mobile: userMobile,
+                gameName: gameNameInput,
+                gameUID: gameUidInput,
+                kills: 0,
+                prize: "0 Coins"
+            })
+        }, { merge: true });
+
+        // B. AUTOMATICALLY updates balance and injects a transaction map object into history array
+        await db.collection('users').doc(userUID).set({ 
+            coins: newBalance,
+            history: firebase.firestore.FieldValue.arrayUnion({
+                title: `${currentSelection.game} (${matchInfo})`,
+                amount: tFee,
+                type: "Debited",
+                date: txDate
+            })
+        }, { merge: true }); // Merge ensures other data (like mobile) is perfectly safe!
+        
+        await fetch(FORMSPREE_URL, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Mobile: userMobile, Match: matchInfo, IGN: gameNameInput, UID: gameUidInput })
+        });
+
+        showSection('success-screen');
+    } catch (err) { alert("Error: " + err.message); }
+});
