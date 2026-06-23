@@ -41,36 +41,58 @@ function getDynamicTournaments() {
             let modeIndex = currentId % 3;
             let currentMode = modes[modeIndex];
             
-                        // Alternating slot size for Solo rooms (50 members vs 30 members)
+                                    // Slots setting
             let maxSlots = 50;
             if (currentMode === "Solo") {
                 maxSlots = (currentId % 2 === 0) ? 30 : 50;
             } else if (currentMode === "Duo") {
-                maxSlots = 50; // 25 Teams
+                maxSlots = 50;
             } else if (currentMode === "Squad") {
-                maxSlots = 48; // 12 Teams
+                maxSlots = 48;
             }
 
             let fee = 10;
-            let perKillReward = "🪙 3 Coins";
-            let topRankReward = "🪙 10 Coins";
-            let winnerReward = "🪙 100 Coins";
+            let perKillReward = "";
+            let topRankReward = "";
+            let winnerReward = "";
 
-            if (currentMode === "Solo") {
-                fee = 10;
-                perKillReward = (maxSlots === 50) ? "🪙 3 Coins" : "🪙 2 Coins";
-                topRankReward = "🪙 10 Coins (Rank 2-10)";
-                winnerReward = "🪙 100 Coins";
-            } else if (currentMode === "Duo") {
-                fee = 15;
-                perKillReward = "🪙 5 Coins";
-                topRankReward = "🪙 20 Coins (Top 5 Teams)";
-                winnerReward = "🪙 200 Coins";
-            } else if (currentMode === "Squad") {
-                fee = 20; 
-                perKillReward = "🪙 5 Coins";
-                topRankReward = "🪙 20 Coins (Top 10 Teams)";
-                winnerReward = "🪙 400 Coins";
+            // --- GAME WISE PRICING MATRIX ---
+            if (gameName === "Free Fire MAX") {
+                // 📍 FREE FIRE PRICING
+                if (currentMode === "Solo") {
+                    fee = 10;
+                    perKillReward = (maxSlots === 50) ? "🪙 3 Coins" : "🪙 2 Coins";
+                    topRankReward = "🪙 10 Coins (Rank 2-10)";
+                    winnerReward = "🪙 100 Coins";
+                } else if (currentMode === "Duo") {
+                    fee = 15;
+                    perKillReward = "🪙 5 Coins";
+                    topRankReward = "🪙 20 Coins (Top 5 Teams)";
+                    winnerReward = "🪙 200 Coins";
+                } else if (currentMode === "Squad") {
+                    fee = 20; 
+                    perKillReward = "🪙 5 Coins";
+                    topRankReward = "🪙 20 Coins (Top 10 Teams)";
+                    winnerReward = "🪙 400 Coins";
+                }
+            } else {
+                // 📍 BGMI PRICING (WITH 20% PLATFORM MARGIN)
+                if (currentMode === "Solo") {
+                    fee = 15; 
+                    perKillReward = "🪙 10 Coins";
+                    topRankReward = "🪙 100 Coins (Rank 2-5)";
+                    winnerReward = "🪙 500 Coins";
+                } else if (currentMode === "Duo") {
+                    fee = 20; 
+                    perKillReward = "🪙 10 Coins";
+                    topRankReward = "🪙 200 Coins (Top 3 Teams)";
+                    winnerReward = "🪙 800 Coins";
+                } else if (currentMode === "Squad") {
+                    fee = 25; 
+                    perKillReward = "🪙 10 Coins";
+                    topRankReward = "🪙 300 Coins (Top 3 Teams)";
+                    winnerReward = "🪙 1200 Coins";
+                }
             }
 
             tournaments.push({
