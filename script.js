@@ -494,3 +494,170 @@ function closeRulesModal() {
     const modal = document.getElementById('rulesModal');
     if(modal) modal.classList.add('hidden');
 }
+// === ISS CODE KO SCRIPT.JS KE SABSE NICHE (END MEIN) PASTE KAREIN ===
+
+// 1. DYNAMIC MATCHES LOOP ME AUTOMATIC FEE UPDATER ENGINE
+function syncDynamicMatchFees(uniqueMatchKey, defaultFee) {
+    db.collection('tournaments').doc(uniqueMatchKey).onSnapshot((doc) => {
+        if (doc.exists) {
+            const tournamentData = doc.data();
+            // Agar database me custom fee set hai, toh wahi use hogi, nahi toh default mode wali
+            if (tournamentData.entryFee !== undefined) {
+                const updatedFee = tournamentData.entryFee;
+                
+                // Card par entry fee text ko instantly update karein
+                const cardEl = document.getElementById(`card_${uniqueMatchKey}`);
+                if (cardEl) {
+                    const feeSpan = cardEl.querySelector('.t-details span:first-child');
+                    if (feeSpan) feeSpan.innerHTML = `🪙 Entry: ${updatedFee} Coins`;
+                }
+                
+                // Active selection registry me automatic update karein
+                if (currentSelection.currentMatchKey === uniqueMatchKey) {
+                    currentSelection.fee = updatedFee;
+                }
+            }
+        }
+    });
+}
+
+// 2. OPEN JOIN MODAL WITH AUTOMATIC LIVE FEE CHECK
+function openJoinModal(matchKey, defaultFee, matchInfo) {
+    if (!currentUserData) return;
+    
+    // Pehle registry me fee save karein
+    currentSelection.currentMatchKey = matchKey;
+    currentSelection.fee = defaultFee;
+    currentSelection.currentMatchInfo = matchInfo;
+
+    // Database se live fee double check karein taaki galat coin na kate
+    db.collection('tournaments').doc(matchKey).get().then((doc) => {
+        let finalFee = defaultFee;
+        if (doc.exists && doc.data().entryFee !== undefined) {
+            finalFee = doc.data().entryFee;
+        }
+        
+        currentSelection.fee = finalFee;
+
+        // Insufficient balance validation checkout
+        if (currentUserData.coins < finalFee) { 
+            showSection('wallet-topup'); 
+            return; 
+        }
+
+        document.getElementById('playerGameName').value = "";
+        document.getElementById('playerGameUID').value = "";
+        document.getElementById('joinModal').classList.remove('hidden');
+    }).catch((err) => {
+        // Safe fallback agar network issue ho
+        if (currentUserData.coins < defaultFee) { showSection('wallet-topup'); return; }
+        document.getElementById('joinModal').classList.remove('hidden');
+    });
+}
+
+// 3. AUTOMATIC REAL-TIME WALLET POPUP SYNC & PASSBOOK RENDERING
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        db.collection('users').doc(user.uid).onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                const modalCoin = document.getElementById('modal-user-coins');
+                if(modalCoin) modalCoin.innerText = data.coins || 0;
+                
+                const historyTableBody = document.getElementById('wallet-history-rows');
+                if (historyTableBody) {
+                    if (!data.history || data.history.length === 0) {
+                        historyTableBody.innerHTML = `<tr><td colspan="2" style="padding: 10px; color: #aaa; text-align: center;">No transaction history found.</td></tr>`;
+                    } else {
+                        let rowsHtml = "";
+                        let reversedHistory = [...data.history].reverse();
+                        reversedHistory.forEach(tx => {
+                            let typeColor = tx.type === "Deposit" || tx.type === "Won" ? "#2ecc71" : "#ff4655";
+                            let prefix = tx.type === "Deposit" || tx.type === "Won" ? "+" : "-";
+                            rowsHtml += `
+                                <tr style="border-bottom: 1px solid #1c232d;">
+                                    <td style="padding: 8px 4px;">
+                                        <div style="font-weight: bold; color: #fff;">${tx.title || 'Match Entry'}</div>
+                                        <div style="font-size: 10px; color: #666;">${tx.date || ''}</div>
+                                    </td>
+                                    <td style="padding: 8px 4px; text-align: right; font-weight: bold; color: ${typeColor};">
+                                        ${prefix}🪙${tx.amount}
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        historyTableBody.innerHTML = rowsHtml;
+                    }
+                }
+            }
+        });
+    }
+});
+
+// 4. OPEN & CLOSE CONTROLS
+function openWalletModal() {
+    if (!auth.currentUser) return;
+    const modal = document.getElementById('walletModal');
+    if(modal) modal.classList.remove('hidden');
+}
+function closeWalletModal() {
+    const modal = document.getElementById('walletModal');
+    if(modal) modal.classList.add('hidden');
+}
+function openRulesModal() {
+    const modal = document.getElementById('rulesModal');
+    if(modal) modal.classList.remove('hidden');
+}
+function closeRulesModal() {
+    const modal = document.getElementById('rulesModal');
+    if(modal) modal.classList.add('hidden');
+}
+
+// 5. AUTOMATIC HISTORY INJECTOR & DYNAMIC FEE DEDUCTION
+document.getElementById('joinForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const gameNameInput = document.getElementById('playerGameName').value.trim();
+    const gameUidInput = document.getElementById('playerGameUID').value.trim();
+    closeJoinModal();
+
+    const uniqueMatchKey = currentSelection.currentMatchKey;
+    const tFee = currentSelection.fee; // Yeh automatic dynamic fee pick karega
+    const matchInfo = currentSelection.currentMatchInfo;
+    const userUID = auth.currentUser.uid;
+    const userMobile = currentUserData.mobile;
+    const newBalance = currentUserData.coins - tFee;
+
+    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
+
+    try {
+        await db.collection('tournaments').doc(uniqueMatchKey).set({
+            players: firebase.firestore.FieldValue.arrayUnion({ 
+                uid: userUID, 
+                mobile: userMobile,
+                gameName: gameNameInput,
+                gameUID: gameUidInput,
+                kills: 0,
+                prize: "0 Coins"
+            })
+        }, { merge: true });
+
+        // Account se automatic exact dynamic fee deduct hogi aur passbook me note banega
+        await db.collection('users').doc(userUID).set({ 
+            coins: newBalance,
+            history: firebase.firestore.FieldValue.arrayUnion({
+                title: `${currentSelection.game} (${matchInfo})`,
+                amount: tFee,
+                type: "Debited",
+                date: txDate
+            })
+        }, { merge: true });
+        
+        await fetch(FORMSPREE_URL, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Mobile: userMobile, Match: matchInfo, IGN: gameNameInput, UID: gameUidInput })
+        });
+
+        showSection('success-screen');
+    } catch (err) { alert("Error: " + err.message); }
+});
