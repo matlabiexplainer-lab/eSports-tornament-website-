@@ -282,16 +282,19 @@ function renderMatchesList() {
                 actionBtnHtml = `<button class="join-btn" style="background:#333; color:#777;" disabled>Match Ended</button>`;
             } else if (status === "live") {
                 actionBtnHtml = `<button class="join-btn" style="background:#e74c3c;" disabled>🔴 Live Match</button>`;
-            } } else if (isUserJoined) {
-    if (!uniqueMatchKey.includes("Solo")) {
-        actionBtnHtml = `
-            <div style="display:flex; gap:6px; flex-direction:column;">
-                <button class="join-btn" style="background:#2ecc71; margin-bottom:2px;" disabled>Joined ✓</button>
-                <button class="join-btn" style="background:#66fcf1; color:#000; font-weight:bold;" onclick="openTeammateModal('${uniqueMatchKey}', ${t.fee}, '${t.time} (${t.mode})')">➕ Add Teammate (🪙${t.fee})</button>
-            </div>
-        `;
-    } else {
-        actionBtnHtml = `<button class="join-btn" style="background:#2ecc71;" disabled>Joined ✓</button>`;
+                    } else if (isUserJoined) {
+            if (!uniqueMatchKey.includes("Solo")) {
+                actionBtnHtml = `
+                    <div style="display:flex; gap:6px; flex-direction:column;">
+                        <button class="join-btn" style="background:#2ecc71; margin-bottom:2px;" disabled>Joined ✓</button>
+                        <button class="join-btn" style="background:#66fcf1; color:#000; font-weight:bold;" onclick="openTeammateModal('${uniqueMatchKey}', ${t.fee}, '${t.time} (${t.mode})')">➕ Add Teammate (🪙${t.fee})</button>
+                    </div>
+                `;
+            } else {
+                actionBtnHtml = `<button class="join-btn" style="background:#2ecc71;" disabled>Joined ✓</button>`;
+            }
+        }
+
     }
 
             } else {
