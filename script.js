@@ -484,3 +484,13 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
         showSection('success-screen');
     } catch (err) { alert("Error: " + err.message); }
 });
+// === ADD THIS AT THE VERY END OF YOUR SCRIPT.JS ===
+function openRulesModal() {
+    const modal = document.getElementById('rulesModal');
+    if(modal) modal.classList.remove('hidden');
+}
+
+function closeRulesModal() {
+    const modal = document.getElementById('rulesModal');
+    if(modal) modal.classList.add('hidden');
+}
