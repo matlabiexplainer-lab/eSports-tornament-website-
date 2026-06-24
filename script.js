@@ -29,6 +29,10 @@ function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
     let currentId = 1;
+    const gameName = currentSelection.game;
+    
+    // Rozana match ID ko badalna taaki "Joined" status har din reset ho jaye
+    const today = new Date().toISOString().split('T')[0];
     
     for (let hour = 9; hour <= 21; hour++) {
         for (let mins of ["00", "30"]) {
@@ -41,19 +45,67 @@ function getDynamicTournaments() {
             let modeIndex = currentId % 3;
             let currentMode = modes[modeIndex];
             
+            // --- GAME WISE PRICING & SLOTS MATRIX ---
+            let fee = 10;
+            let perKillReward = "";
+            let topRankReward = "";
+            let winnerReward = "";
+            let maxSlots = currentMode === "Solo" ? 50 : (currentMode === "Duo" ? 50 : 48);
+
+            if (gameName === "Free Fire MAX") {
+                if (currentMode === "Solo") {
+                    maxSlots = (currentId % 2 === 0) ? 30 : 50;
+                    fee = 10;
+                    perKillReward = (maxSlots === 50) ? "🪙 3 Coins" : "🪙 2 Coins";
+                    topRankReward = "🪙 10 Coins (Rank 2-10)";
+                    winnerReward = "🪙 100 Coins";
+                } else if (currentMode === "Duo") {
+                    fee = 15;
+                    perKillReward = "🪙 5 Coins";
+                    topRankReward = "🪙 20 Coins (Top 5 Teams)";
+                    winnerReward = "🪙 200 Coins";
+                } else if (currentMode === "Squad") {
+                    maxSlots = 48;
+                    fee = 20; 
+                    perKillReward = "🪙 5 Coins";
+                    topRankReward = "🪙 20 Coins (Top 10 Teams)";
+                    winnerReward = "🪙 400 Coins";
+                }
+            } else {
+                // BGMI MATRIX WITH 20% MARGIN
+                if (currentMode === "Solo") {
+                    maxSlots = (currentId % 2 === 0) ? 30 : 50;
+                    fee = 15; 
+                    perKillReward = "🪙 10 Coins";
+                    topRankReward = "🪙 100 Coins (Rank 2-5)";
+                    winnerReward = "🪙 500 Coins";
+                } else if (currentMode === "Duo") {
+                    fee = 20; 
+                    perKillReward = "🪙 10 Coins";
+                    topRankReward = "🪙 200 Coins (Top 3 Teams)";
+                    winnerReward = "🪙 800 Coins";
+                } else if (currentMode === "Squad") {
+                    maxSlots = 48;
+                    fee = 25; 
+                    perKillReward = "🪙 10 Coins";
+                    topRankReward = "🪙 300 Coins (Top 3 Teams)";
+                    winnerReward = "🪙 1200 Coins";
+                }
+            }
+            
             tournaments.push({
-                id: `match_${hour}_${mins}`,
+                id: `match_${today}_${hour}_${mins}`, // Unique ID with Date
                 time: matchTime,
                 hour24: hour,
                 minNum: parseInt(mins),
                 mode: currentMode,
-                fee: currentMode === "Solo" ? 10 : (currentMode === "Duo" ? 20 : 40),
+                fee: fee,
                 rewards: {
-                    perKill: currentMode === "Solo" ? "🪙 5 Coins" : "🪙 3 Coins",
-                    top10: currentMode === "Solo" ? "🪙 20 Coins" : "🪙 40 Coins",
-                    winner: currentMode === "Solo" ? "🪙 100 Coins" : (currentMode === "Duo" ? "🪙 200 Coins" : "🪙 400 Coins")
+                    perKill: perKillReward,
+                    top10: topRankReward,
+                    winner: winnerReward
                 },
-                maxSlots: currentMode === "Solo" ? 50 : (currentMode === "Duo" ? 50 : 25)
+                maxSlots: maxSlots
             });
             currentId++;
         }
@@ -345,25 +397,27 @@ function closeAuthModal() { document.getElementById('authModal').classList.add('
 function closeTeammateModal() { const m = document.getElementById('addTeammateModal'); if(m) m.classList.add('hidden'); }
 
 function openJoinModal(matchKey, fee, matchInfo) {
-    if (!currentUserData) return;
+    if (!auth.currentUser || !currentUserData) { openAuthModal(); return; }
     if (currentUserData.coins < fee) { showSection('wallet-topup'); return; }
     currentSelection.currentMatchKey = matchKey;
     currentSelection.fee = fee;
     currentSelection.currentMatchInfo = matchInfo;
     document.getElementById('playerGameName').value = "";
     document.getElementById('playerGameUID').value = "";
-    document.getElementById('joinModal').classList.remove('hidden');
+    const m = document.getElementById('joinModal');
+    if(m) m.classList.remove('hidden');
 }
 
 function openTeammateModal(matchKey, fee, matchInfo) {
-    if (!currentUserData) return;
+    if (!auth.currentUser || !currentUserData) { openAuthModal(); return; }
     if (currentUserData.coins < fee) { showSection('wallet-topup'); return; }
     currentSelection.currentMatchKey = matchKey;
     currentSelection.fee = fee;
     currentSelection.currentMatchInfo = matchInfo;
     document.getElementById('mateGameName').value = "";
     document.getElementById('mateGameUID').value = "";
-    document.getElementById('addTeammateModal').classList.remove('hidden');
+    const m = document.getElementById('addTeammateModal');
+    if(m) m.classList.remove('hidden');
 }
 
 document.getElementById('joinForm').addEventListener('submit', async (e) => {
@@ -446,16 +500,48 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
     const pass = document.getElementById('authPassword').value;
     const dynamicEmail = inputVal.includes('@') ? inputVal : `${inputVal}@skesports.com`;
 
+    Swal.fire({
+        title: 'Processing...',
+        text: 'Please wait a moment',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); },
+        background: '#141a24',
+        color: '#fff'
+    });
+
     try {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
             await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
-            alert("Registered! Balance: 0 Coins.");
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Welcome to SK eSports! 🎉',
+                html: '<p style="color: #66fcf1; font-weight: bold;">Registered Successfully!</p><p>Starting Balance: 🪙 0 Coins</p>',
+                background: '#141a24',
+                color: '#fff',
+                confirmButtonColor: '#ff4655'
+            });
         } else {
             await auth.signInWithEmailAndPassword(dynamicEmail, pass);
+            Swal.close(); 
         }
         closeAuthModal();
-    } catch (err) { alert(err.message); }
+    } catch (err) {
+        let friendlyMessage = err.message;
+        if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
+            friendlyMessage = "Incorrect Mobile/Email or Password. Please try again or create a new account!";
+        }
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Authentication Failed',
+            text: friendlyMessage,
+            background: '#141a24',
+            color: '#fff',
+            confirmButtonColor: '#ff4655'
+        });
+    }
 });
 
 function toggleAuthMode() {
@@ -464,4 +550,4 @@ function toggleAuthMode() {
     document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
 }
 function logoutUser() { auth.signOut().then(() => location.reload()); }
-
+                
