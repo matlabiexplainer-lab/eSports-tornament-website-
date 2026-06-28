@@ -1,12 +1,30 @@
 // ==========================================================================
-// 🔒 SK ESPORTS CENTRAL SECURITY GATEWAY
+// 🔒 SK ESPORTS CENTRAL SECURITY GATEWAY (CRASH PROOF VERSION)
 // ==========================================================================
 
-// Pehle hi poore body ko chhupa do taaki password ke bina UI na dikhe
-document.body.style.display = "none";
+// Page load hote hi CSS injection se body ko chhupana taaki pehle password popup aaye
+const styleEl = document.createElement('style');
+styleEl.innerHTML = 'body { display: none !important; }';
+document.head.appendChild(styleEl);
 
+const firebaseConfig = {
+    apiKey: "AIzaSyB-C7Ks_lXWWf1RMKUQ8cPuhov5y7ZveXM",
+    authDomain: "sk-esports-90bf9.firebaseapp.com",
+    projectId: "sk-esports-90bf9",
+    storageBucket: "sk-esports-90bf9.firebasestorage.app",
+    messagingSenderId: "471222264434",
+    appId: "1:471222264434:web:b54a25264d5b2ae70a58eb",
+    measurementId: "G-KW6J0GE4TF"
+};
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+let loadedPlayers = [];
+
+// DOM load hone par password checking engine chalana
 window.addEventListener("DOMContentLoaded", async () => {
-    // Tum apna secret password yahan badal sakte ho (Abhi 'Gaurav@SK7' rakha hai)
     const SECRET_ADMIN_PASSWORD = "Gaurav@SK7"; 
 
     const { value: password } = await Swal.fire({
@@ -26,8 +44,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     });
 
     if (password === SECRET_ADMIN_PASSWORD) {
-        // Agar password sahi hai toh UI show karo
-        document.body.style.display = "block";
+        // Sahi password hone par CSS block ko delete karna taaki UI visible ho jaye
+        styleEl.remove();
         Swal.fire({
             icon: 'success',
             title: 'Access Granted',
@@ -38,7 +56,6 @@ window.addEventListener("DOMContentLoaded", async () => {
             color: '#fff'
         });
     } else {
-        // Agar galat password dala toh access block aur redirect
         await Swal.fire({
             icon: 'error',
             title: 'Access Denied',
@@ -47,29 +64,9 @@ window.addEventListener("DOMContentLoaded", async () => {
             background: '#141a24',
             color: '#fff'
         });
-        window.location.href = "index.html"; // Wapas bhej dega main website par
+        window.location.href = "index.html"; 
     }
 });
-
-// ==========================================================================
-// 🛠️ SK ESPORTS OFFICIAL CLIENT ENGINE - ADMIN MODULE
-// ==========================================================================
-
-const firebaseConfig = {
-    apiKey: "AIzaSyB-C7Ks_lXWWf1RMKUQ8cPuhov5y7ZveXM",
-    authDomain: "sk-esports-90bf9.firebaseapp.com",
-    projectId: "sk-esports-90bf9",
-    storageBucket: "sk-esports-90bf9.firebasestorage.app",
-    messagingSenderId: "471222264434",
-    appId: "1:471222264434:web:b54a25264d5b2ae70a58eb",
-    measurementId: "G-KW6J0GE4TF"
-};
-
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.firestore();
-let loadedPlayers = [];
 
 // --- 1. REALTIME COIN & PASSBOOK MANAGER ---
 async function updateUserCoins(actionType) {
@@ -170,7 +167,6 @@ async function saveMatchResults() {
     const matchKey = document.getElementById('resultMatchKey').value.trim();
     if(!matchKey || loadedPlayers.length === 0) { Swal.fire('Error', 'No data to save.', 'error'); return; }
 
-    // Read values from inputs dynamically
     const updatedPlayers = loadedPlayers.map((p, index) => {
         return {
             ...p,
@@ -188,6 +184,7 @@ async function saveMatchResults() {
         Swal.fire('Error Saving', err.message, 'error');
     }
 }
+
 // --- 4. GLOBAL RATE & PRIZE DISPATCHER ---
 async function saveGlobalRates() {
     const game = document.getElementById('configGameSelect').value;
@@ -202,7 +199,6 @@ async function saveGlobalRates() {
         return;
     }
 
-    // Creating unique document ID like: BGMI_Solo_Config
     const configDocKey = `${game.replace(/\s+/g, '')}_${mode}_Config`;
 
     try {
@@ -221,6 +217,7 @@ async function saveGlobalRates() {
         Swal.fire('Error Saving Configuration', err.message, 'error');
     }
 }
+
 // --- 5. SPECIFIC MATCH OVERWRITE CONTROLLER ---
 async function updateSpecificMatch() {
     const matchKey = document.getElementById('specificMatchKey').value.trim();
@@ -234,7 +231,6 @@ async function updateSpecificMatch() {
         return;
     }
 
-    // Build payload dynamically based on what admin filled
     let updateData = { fee: parseInt(fee) };
     
     if(perKill || topRank || winner) {
@@ -245,11 +241,9 @@ async function updateSpecificMatch() {
     }
 
     try {
-        // Directly creates or merges the field in tournaments collection
         await db.collection('tournaments').doc(matchKey).set(updateData, { merge: true });
         Swal.fire('Match Updated!', `Match ${matchKey} has been customized successfully!`, 'success');
     } catch(err) {
         Swal.fire('Error Updating Match', err.message, 'error');
     }
 }
-
