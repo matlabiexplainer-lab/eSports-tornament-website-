@@ -1,12 +1,19 @@
 // ==========================================================================
-// 🔒 SK ESPORTS CENTRAL SECURITY GATEWAY (CRASH PROOF VERSION)
+// 🔒 SK ESPORTS CENTRAL SECURITY GATEWAY (100% CRASH PROOF PROMPT VERSION)
 // ==========================================================================
 
-// Page load hote hi CSS injection se body ko chhupana taaki pehle password popup aaye
-const styleEl = document.createElement('style');
-styleEl.innerHTML = 'body { display: none !important; }';
-document.head.appendChild(styleEl);
+// Tum apna secret password yahan badal sakte ho
+const SECRET_ADMIN_PASSWORD = "Gaurav@SK7"; 
 
+// Page ka baki code chalne se pehle hi browser se password mangna
+let adminInput = prompt("🔒 SK eSports Admin Panel\nEnter Secret Command Password:");
+
+if (adminInput !== SECRET_ADMIN_PASSWORD) {
+    alert("❌ Access Denied: Incorrect Password!");
+    window.location.href = "index.html"; // Wapas main website par bhej dega
+}
+
+// --- FIREBASE CONFIGURATION & CORE LOGIC ---
 const firebaseConfig = {
     apiKey: "AIzaSyB-C7Ks_lXWWf1RMKUQ8cPuhov5y7ZveXM",
     authDomain: "sk-esports-90bf9.firebaseapp.com",
@@ -23,51 +30,6 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 let loadedPlayers = [];
 
-// DOM load hone par password checking engine chalana
-window.addEventListener("DOMContentLoaded", async () => {
-    const SECRET_ADMIN_PASSWORD = "Gaurav@SK7"; 
-
-    const { value: password } = await Swal.fire({
-        title: '🔒 Admin Authentication',
-        input: 'password',
-        inputLabel: 'Enter Secret Admin Command Password',
-        inputPlaceholder: 'Enter password...',
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        confirmButtonColor: '#ff4655',
-        background: '#141a24',
-        color: '#fff',
-        inputAttributes: {
-            autocapitalize: 'off',
-            autocorrect: 'off'
-        }
-    });
-
-    if (password === SECRET_ADMIN_PASSWORD) {
-        // Sahi password hone par CSS block ko delete karna taaki UI visible ho jaye
-        styleEl.remove();
-        Swal.fire({
-            icon: 'success',
-            title: 'Access Granted',
-            text: 'Welcome back, Gaurav!',
-            timer: 1500,
-            showConfirmButton: false,
-            background: '#141a24',
-            color: '#fff'
-        });
-    } else {
-        await Swal.fire({
-            icon: 'error',
-            title: 'Access Denied',
-            text: 'Incorrect Password! Redirecting to main site...',
-            confirmButtonColor: '#ff4655',
-            background: '#141a24',
-            color: '#fff'
-        });
-        window.location.href = "index.html"; 
-    }
-});
-
 // --- 1. REALTIME COIN & PASSBOOK MANAGER ---
 async function updateUserCoins(actionType) {
     const uid = document.getElementById('manageUserUID').value.trim();
@@ -76,7 +38,7 @@ async function updateUserCoins(actionType) {
     const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
 
     if(!uid || !amount || !title) {
-        Swal.fire('Error', 'Please fill all coin management fields.', 'error');
+        alert('Please fill all coin management fields.');
         return;
     }
 
@@ -102,9 +64,9 @@ async function updateUserCoins(actionType) {
                 })
             });
         });
-        Swal.fire('Success', `Coins transaction completed successfully!`, 'success');
+        alert('Coins transaction completed successfully!');
     } catch (err) {
-        Swal.fire('Transaction Failed', err.toString(), 'error');
+        alert('Transaction Failed: ' + err.toString());
     }
 }
 
@@ -115,7 +77,7 @@ async function updateRoomDetails() {
     const roomPass = document.getElementById('adminRoomPass').value.trim();
 
     if(!matchKey || !roomId || !roomPass) {
-        Swal.fire('Error', 'Please enter match key, Room ID, and Password.', 'error');
+        alert('Please enter match key, Room ID, and Password.');
         return;
     }
 
@@ -124,9 +86,9 @@ async function updateRoomDetails() {
             roomId: roomId,
             roomPass: roomPass
         }, { merge: true });
-        Swal.fire('Broadcasted!', 'Room ID and Password are now visible to joined players.', 'success');
+        alert('Room ID and Password are now visible to joined players.');
     } catch(err) {
-        Swal.fire('Error', err.message, 'error');
+        alert('Error: ' + err.message);
     }
 }
 
@@ -134,7 +96,7 @@ async function updateRoomDetails() {
 async function loadMatchPlayers() {
     const matchKey = document.getElementById('resultMatchKey').value.trim();
     const tbody = document.getElementById('admin-player-rows');
-    if(!matchKey) { Swal.fire('Error', 'Enter a valid tournament key.', 'error'); return; }
+    if(!matchKey) { alert('Enter a valid tournament key.'); return; }
 
     tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#fff;">Fetching tournament registry...</td></tr>`;
 
@@ -159,13 +121,13 @@ async function loadMatchPlayers() {
         });
         tbody.innerHTML = html;
     } catch(err) {
-        Swal.fire('Error Loading', err.message, 'error');
+        alert('Error Loading: ' + err.message);
     }
 }
 
 async function saveMatchResults() {
     const matchKey = document.getElementById('resultMatchKey').value.trim();
-    if(!matchKey || loadedPlayers.length === 0) { Swal.fire('Error', 'No data to save.', 'error'); return; }
+    if(!matchKey || loadedPlayers.length === 0) { alert('No data to save.'); return; }
 
     const updatedPlayers = loadedPlayers.map((p, index) => {
         return {
@@ -179,9 +141,9 @@ async function saveMatchResults() {
         await db.collection('tournaments').doc(matchKey).update({
             players: updatedPlayers
         });
-        Swal.fire('Scores Updated!', 'Scorecard updated. Winners can now view their prizes.', 'success');
+        alert('Scorecard updated successfully!');
     } catch(err) {
-        Swal.fire('Error Saving', err.message, 'error');
+        alert('Error Saving: ' + err.message);
     }
 }
 
@@ -195,7 +157,7 @@ async function saveGlobalRates() {
     const winner = document.getElementById('configWinner').value.trim();
 
     if(!fee || !perKill || !topRank || !winner) {
-        Swal.fire('Error', 'Please fill all rate and reward configuration fields.', 'error');
+        alert('Please fill all rate and reward configuration fields.');
         return;
     }
 
@@ -212,9 +174,9 @@ async function saveGlobalRates() {
                 winner: winner
             }
         });
-        Swal.fire('Rates Updated!', `${game} ${mode} configuration is now live for all upcoming matches!`, 'success');
+        alert('Rates Updated successfully for upcoming matches!');
     } catch(err) {
-        Swal.fire('Error Saving Configuration', err.message, 'error');
+        alert('Error Saving Configuration: ' + err.message);
     }
 }
 
@@ -227,7 +189,7 @@ async function updateSpecificMatch() {
     const winner = document.getElementById('specificWinner').value.trim();
 
     if(!matchKey || fee === "") {
-        Swal.fire('Error', 'Please enter at least the Match Key and Entry Fee.', 'error');
+        alert('Please enter at least the Match Key and Entry Fee.');
         return;
     }
 
@@ -242,8 +204,8 @@ async function updateSpecificMatch() {
 
     try {
         await db.collection('tournaments').doc(matchKey).set(updateData, { merge: true });
-        Swal.fire('Match Updated!', `Match ${matchKey} has been customized successfully!`, 'success');
+        alert('Match updated and customized successfully!');
     } catch(err) {
-        Swal.fire('Error Updating Match', err.message, 'error');
+        alert('Error Updating Match: ' + err.message);
     }
-}
+            }
