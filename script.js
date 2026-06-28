@@ -31,7 +31,6 @@ function getDynamicTournaments() {
     let currentId = 1;
     const gameName = currentSelection.game;
     
-    // Rozana match ID ko badalna taaki "Joined" status har din reset ho jaye
     const today = new Date().toISOString().split('T')[0];
     
     for (let hour = 9; hour <= 21; hour++) {
@@ -45,7 +44,6 @@ function getDynamicTournaments() {
             let modeIndex = currentId % 3;
             let currentMode = modes[modeIndex];
             
-            // --- GAME WISE PRICING & SLOTS MATRIX ---
             let fee = 10;
             let perKillReward = "";
             let topRankReward = "";
@@ -72,20 +70,21 @@ function getDynamicTournaments() {
                     winnerReward = "🪙 400 Coins";
                 }
             } else {
-                // BGMI MATRIX WITH 20% MARGIN
+                // BGMI MATRIX WITH 20% MARGIN & 100 SLOTS FOR ALL MODES
                 if (currentMode === "Solo") {
-                    maxSlots = (currentId % 2 === 0) ? 30 : 50;
+                    maxSlots = 100; // 👈 Updated to 100
                     fee = 15; 
                     perKillReward = "🪙 10 Coins";
                     topRankReward = "🪙 100 Coins (Rank 2-5)";
                     winnerReward = "🪙 500 Coins";
                 } else if (currentMode === "Duo") {
+                    maxSlots = 100; // 👈 Updated to 100
                     fee = 20; 
                     perKillReward = "🪙 10 Coins";
                     topRankReward = "🪙 200 Coins (Top 3 Teams)";
                     winnerReward = "🪙 800 Coins";
                 } else if (currentMode === "Squad") {
-                    maxSlots = 48;
+                    maxSlots = 100; // 👈 Updated to 100
                     fee = 25; 
                     perKillReward = "🪙 10 Coins";
                     topRankReward = "🪙 300 Coins (Top 3 Teams)";
@@ -94,7 +93,7 @@ function getDynamicTournaments() {
             }
             
             tournaments.push({
-                id: `match_${today}_${hour}_${mins}`, // Unique ID with Date
+                id: `match_${today}_${hour}_${mins}`,
                 time: matchTime,
                 hour24: hour,
                 minNum: parseInt(mins),
@@ -128,7 +127,6 @@ auth.onAuthStateChanged((user) => {
                 const modalCoin = document.getElementById('modal-user-coins');
                 if(modalCoin) modalCoin.innerText = currentUserData.coins || 0;
                 
-                // Real-time Wallet History / Passbook Render
                 const historyTableBody = document.getElementById('wallet-history-rows');
                 if (historyTableBody) {
                     if (!currentUserData.history || currentUserData.history.length === 0) {
@@ -550,4 +548,4 @@ function toggleAuthMode() {
     document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
 }
 function logoutUser() { auth.signOut().then(() => location.reload()); }
-                
+                    
