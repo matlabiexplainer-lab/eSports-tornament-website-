@@ -135,4 +135,37 @@ async function saveMatchResults() {
         Swal.fire('Error Saving', err.message, 'error');
     }
 }
+// --- 4. GLOBAL RATE & PRIZE DISPATCHER ---
+async function saveGlobalRates() {
+    const game = document.getElementById('configGameSelect').value;
+    const mode = document.getElementById('configModeSelect').value;
+    const fee = parseInt(document.getElementById('configFee').value);
+    const perKill = document.getElementById('configPerKill').value.trim();
+    const topRank = document.getElementById('configTopRank').value.trim();
+    const winner = document.getElementById('configWinner').value.trim();
+
+    if(!fee || !perKill || !topRank || !winner) {
+        Swal.fire('Error', 'Please fill all rate and reward configuration fields.', 'error');
+        return;
+    }
+
+    // Creating unique document ID like: BGMI_Solo_Config
+    const configDocKey = `${game.replace(/\s+/g, '')}_${mode}_Config`;
+
+    try {
+        await db.collection('gameConfigs').doc(configDocKey).set({
+            game: game,
+            mode: mode,
+            fee: fee,
+            rewards: {
+                perKill: perKill,
+                top10: topRank,
+                winner: winner
+            }
+        });
+        Swal.fire('Rates Updated!', `${game} ${mode} configuration is now live for all upcoming matches!`, 'success');
+    } catch(err) {
+        Swal.fire('Error Saving Configuration', err.message, 'error');
+    }
+}
 
