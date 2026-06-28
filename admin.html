@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SK eSports - Admin Control Panel</title>
+    <style>
+        body { background: #0d1117; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
+        h1, h2 { color: #66fcf1; border-bottom: 2px solid #ff4655; padding-bottom: 8px; }
+        .admin-card { background: #141a24; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #1c232d; }
+        label { display: block; margin: 10px 0 5px; color: #aaa; font-size: 14px; }
+        input, select, button { width: 100%; padding: 10px; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        input, select { background: #1e2736; border: 1px solid #444; color: #fff; margin-bottom: 10px; }
+        button { background: #ff4655; border: none; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #e03d4a; }
+        .row { display: flex; gap: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #222; padding: 10px; text-align: left; }
+        th { background: #111a24; color: #66fcf1; }
+    </style>
+    <!-- Firebase Standard Core SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- SweetAlert2 Premium Popups -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+    <h1>🎮 SK eSports - Central Admin Command Center</h1>
+
+    <!-- 1. USER WALLET CONTROL -->
+    <div class="admin-card">
+        <h2>🪙 User Wallet & Coin Management</h2>
+        <label>User Unique UID (Firebase User ID):</label>
+        <input type="text" id="manageUserUID" placeholder="Paste user UID here...">
+        
+        <div class="row">
+            <div>
+                <label>Coin Amount:</label>
+                <input type="number" id="coinAmount" placeholder="e.g. 100">
+            </div>
+            <div>
+                <label>Transaction Title (For History Logs):</label>
+                <input type="text" id="txTitle" placeholder="e.g. Deposit Bonus / Refund">
+            </div>
+        </div>
+        <div class="row" style="margin-top: 10px;">
+            <button onclick="updateUserCoins('Deposit')" style="background: #2ecc71;">➕ Add / Deposit Coins</button>
+            <button onclick="updateUserCoins('Debited')" style="background: #e74c3c;">➖ Deduct / Withdraw Coins</button>
+        </div>
+    </div>
+
+    <!-- 2. ROOM ID & PASSWORD MANAGEMENT -->
+    <div class="admin-card">
+        <h2>🔑 Live Match Room ID & Password Updater</h2>
+        <label>Select Active Tournament Key:</label>
+        <input type="text" id="roomMatchKey" placeholder="e.g. FreeFireMAX_match_2026-06-28_10_00">
+        
+        <div class="row">
+            <div>
+                <label>Official Room ID:</label>
+                <input type="text" id="adminRoomId" placeholder="Enter Room ID">
+            </div>
+            <div>
+                <label>Room Password:</label>
+                <input type="text" id="adminRoomPass" placeholder="Enter Password">
+            </div>
+        </div>
+        <button onclick="updateRoomDetails()" style="margin-top:10px; background: #66fcf1; color: #000;">📡 Broadcast Room Details</button>
+    </div>
+
+    <!-- 3. MATCH LEADERBOARD & RESULTS DISBursal -->
+    <div class="admin-card">
+        <h2>🏆 Match Scoring & Result Disbursal</h2>
+        <label>Tournament Match Key:</label>
+        <input type="text" id="resultMatchKey" placeholder="e.g. BGMI_match_2026-06-28_11_30">
+        <button onclick="loadMatchPlayers()" style="margin-bottom: 15px; background: #34495e;">🔍 Load Joined Players List</button>
+        
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Player Name</th>
+                        <th>UID</th>
+                        <th>Kills Score</th>
+                        <th>Prize Disbursed (Coins)</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-player-rows">
+                    <tr><td colspan="4" style="text-align:center; color:#666;">Load a match to manage scorecard.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <button onclick="saveMatchResults()" style="margin-top: 15px; background: #2ecc71;">💾 Finalize Scorecard & Save</button>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
+
