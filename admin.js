@@ -168,4 +168,35 @@ async function saveGlobalRates() {
         Swal.fire('Error Saving Configuration', err.message, 'error');
     }
 }
+// --- 5. SPECIFIC MATCH OVERWRITE CONTROLLER ---
+async function updateSpecificMatch() {
+    const matchKey = document.getElementById('specificMatchKey').value.trim();
+    const fee = document.getElementById('specificFee').value;
+    const perKill = document.getElementById('specificPerKill').value.trim();
+    const topRank = document.getElementById('specificTopRank').value.trim();
+    const winner = document.getElementById('specificWinner').value.trim();
+
+    if(!matchKey || fee === "") {
+        Swal.fire('Error', 'Please enter at least the Match Key and Entry Fee.', 'error');
+        return;
+    }
+
+    // Build payload dynamically based on what admin filled
+    let updateData = { fee: parseInt(fee) };
+    
+    if(perKill || topRank || winner) {
+        updateData.rewards = {};
+        if(perKill) updateData.rewards.perKill = perKill;
+        if(topRank) updateData.rewards.top10 = topRank;
+        if(winner) updateData.rewards.winner = winner;
+    }
+
+    try {
+        // Directly creates or merges the field in tournaments collection
+        await db.collection('tournaments').doc(matchKey).set(updateData, { merge: true });
+        Swal.fire('Match Updated!', `Match ${matchKey} has been customized successfully!`, 'success');
+    } catch(err) {
+        Swal.fire('Error Updating Match', err.message, 'error');
+    }
+}
 
