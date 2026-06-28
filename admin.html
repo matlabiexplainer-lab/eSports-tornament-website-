@@ -18,18 +18,57 @@
         th, td { border: 1px solid #222; padding: 10px; text-align: left; }
         th { background: #111a24; color: #66fcf1; }
     </style>
-    <!-- Firebase Standard Core SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <!-- SweetAlert2 Premium Popups -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
     <h1>🎮 SK eSports - Central Admin Command Center</h1>
 
-    <!-- 1. USER WALLET CONTROL -->
+    <!-- DYNAMIC RATE & PRIZE CONFIGURATOR -->
+    <div class="admin-card">
+        <h2>⚙️ Global Tournament Rate & Prize Configurator</h2>
+        <label>Select Game to Configure:</label>
+        <select id="configGameSelect">
+            <option value="BGMI">BGMI</option>
+            <option value="Free Fire MAX">Free Fire MAX</option>
+        </select>
+
+        <label>Select Match Mode:</label>
+        <select id="configModeSelect">
+            <option value="Solo">Solo</option>
+            <option value="Duo">Duo</option>
+            <option value="Squad">Squad</option>
+        </select>
+
+        <div class="row">
+            <div>
+                <label>Entry Fee (Coins):</label>
+                <input type="number" id="configFee" placeholder="e.g. 15">
+            </div>
+            <div>
+                <label>Per Kill Reward (Text):</label>
+                <input type="text" id="configPerKill" placeholder="e.g. 🪙 10 Coins">
+            </div>
+        </div>
+
+        <div class="row">
+            <div>
+                <label>Top Rank Reward (Text):</label>
+                <input type="text" id="configTopRank" placeholder="e.g. 🪙 100 Coins (Rank 2-5)">
+            </div>
+            <div>
+                <label>Winner / Chicken Reward (Text):</label>
+                <input type="text" id="configWinner" placeholder="e.g. 🪙 500 Coins">
+            </div>
+        </div>
+
+        <button onclick="saveGlobalRates()" style="background: #ff4655; margin-top: 10px;">🚀 Save & Update Upcoming Rates</button>
+    </div>
+
+    <!-- USER WALLET CONTROL -->
     <div class="admin-card">
         <h2>🪙 User Wallet & Coin Management</h2>
         <label>User Unique UID (Firebase User ID):</label>
@@ -51,7 +90,7 @@
         </div>
     </div>
 
-    <!-- 2. ROOM ID & PASSWORD MANAGEMENT -->
+    <!-- ROOM ID & PASSWORD MANAGEMENT -->
     <div class="admin-card">
         <h2>🔑 Live Match Room ID & Password Updater</h2>
         <label>Select Active Tournament Key:</label>
@@ -70,7 +109,7 @@
         <button onclick="updateRoomDetails()" style="margin-top:10px; background: #66fcf1; color: #000;">📡 Broadcast Room Details</button>
     </div>
 
-    <!-- 3. MATCH LEADERBOARD & RESULTS DISBursal -->
+    <!-- MATCH LEADERBOARD & RESULTS -->
     <div class="admin-card">
         <h2>🏆 Match Scoring & Result Disbursal</h2>
         <label>Tournament Match Key:</label>
@@ -98,4 +137,3 @@
     <script src="admin.js"></script>
 </body>
 </html>
-
