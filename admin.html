@@ -18,16 +18,18 @@
         th, td { border: 1px solid #222; padding: 10px; text-align: left; }
         th { background: #111a24; color: #66fcf1; }
     </style>
+    <!-- Firebase Standard Core SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- SweetAlert2 Premium Popups -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
     <h1>🎮 SK eSports - Central Admin Command Center</h1>
 
-    <!-- DYNAMIC RATE & PRIZE CONFIGURATOR -->
+    <!-- 1. GLOBAL TOURNAMENT RATE & PRIZE CONFIGURATOR -->
     <div class="admin-card">
         <h2>⚙️ Global Tournament Rate & Prize Configurator</h2>
         <label>Select Game to Configure:</label>
@@ -68,7 +70,37 @@
         <button onclick="saveGlobalRates()" style="background: #ff4655; margin-top: 10px;">🚀 Save & Update Upcoming Rates</button>
     </div>
 
-    <!-- USER WALLET CONTROL -->
+    <!-- 2. SPECIFIC SINGLE MATCH CUSTOMIZER (MAKE MATCH FREE) -->
+    <div class="admin-card" style="border: 1px dashed #ff4655;">
+        <h2>🎯 Specific Single Match Customizer (Make Match Free)</h2>
+        <label>Enter Exact Match Key to Change:</label>
+        <input type="text" id="specificMatchKey" placeholder="e.g. FreeFireMAX_match_2026-06-28_18_00">
+        
+        <div class="row">
+            <div>
+                <label>New Entry Fee for this Match (0 for Free):</label>
+                <input type="number" id="specificFee" placeholder="e.g. 0">
+            </div>
+            <div>
+                <label>Custom Per Kill Reward:</label>
+                <input type="text" id="specificPerKill" placeholder="e.g. 🪙 0 Coins / 🪙 2 Coins">
+            </div>
+        </div>
+
+        <div class="row">
+            <div>
+                <label>Custom Top Rank Reward:</label>
+                <input type="text" id="specificTopRank" placeholder="e.g. 🪙 5 Coins">
+            </div>
+            <div>
+                <label>Custom Winner Reward:</label>
+                <input type="text" id="specificWinner" placeholder="e.g. 🪙 50 Coins">
+            </div>
+        </div>
+        <button onclick="updateSpecificMatch()" style="background: #2ecc71; margin-top: 10px;">⚡ Apply Changes to This Match Only</button>
+    </div>
+
+    <!-- 3. USER WALLET CONTROL -->
     <div class="admin-card">
         <h2>🪙 User Wallet & Coin Management</h2>
         <label>User Unique UID (Firebase User ID):</label>
@@ -90,7 +122,7 @@
         </div>
     </div>
 
-    <!-- ROOM ID & PASSWORD MANAGEMENT -->
+    <!-- 4. ROOM ID & PASSWORD MANAGEMENT -->
     <div class="admin-card">
         <h2>🔑 Live Match Room ID & Password Updater</h2>
         <label>Select Active Tournament Key:</label>
@@ -109,7 +141,7 @@
         <button onclick="updateRoomDetails()" style="margin-top:10px; background: #66fcf1; color: #000;">📡 Broadcast Room Details</button>
     </div>
 
-    <!-- MATCH LEADERBOARD & RESULTS -->
+    <!-- 5. MATCH LEADERBOARD & RESULTS -->
     <div class="admin-card">
         <h2>🏆 Match Scoring & Result Disbursal</h2>
         <label>Tournament Match Key:</label>
