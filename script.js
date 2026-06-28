@@ -24,13 +24,22 @@ let currentUserData = null;
 let isSignUpMode = false;
 let currentActiveTab = "upcoming";
 
-// --- GENERATE SCHEDULE ARRAYS ---
+// --- DYNAMIC DATA-DRIVEN SCHEDULE ENGINE ---
+let databaseGameConfigs = {};
+
+// Sync admin global rate configs in real-time
+db.collection('gameConfigs').onSnapshot((snapshot) => {
+    snapshot.forEach(doc => {
+        databaseGameConfigs[doc.id] = doc.data();
+    });
+    if(currentSelection.game) renderMatchesList();
+});
+
 function getDynamicTournaments() {
     const tournaments = [];
     const modes = ["Solo", "Duo", "Squad"];
     let currentId = 1;
     const gameName = currentSelection.game;
-    
     const today = new Date().toISOString().split('T')[0];
     
     for (let hour = 9; hour <= 21; hour++) {
@@ -44,52 +53,27 @@ function getDynamicTournaments() {
             let modeIndex = currentId % 3;
             let currentMode = modes[modeIndex];
             
-            let fee = 10;
-            let perKillReward = "";
-            let topRankReward = "";
-            let winnerReward = "";
+            // Build key format matching admin dispatch
+            const configKey = `${gameName.replace(/\s+/g, '')}_${currentMode}_Config`;
+            const activeConfig = databaseGameConfigs[configKey];
+
+            // Default fallback matrix if admin config doesn't exist yet
+            let fee = currentMode === "Solo" ? 10 : (currentMode === "Duo" ? 15 : 20);
+            let perKillReward = "🪙 5 Coins";
+            let topRankReward = "🪙 20 Coins";
+            let winnerReward = "🪙 100 Coins";
             let maxSlots = currentMode === "Solo" ? 50 : (currentMode === "Duo" ? 50 : 48);
 
-            if (gameName === "Free Fire MAX") {
-                if (currentMode === "Solo") {
-                    maxSlots = (currentId % 2 === 0) ? 30 : 50;
-                    fee = 10;
-                    perKillReward = (maxSlots === 50) ? "🪙 3 Coins" : "🪙 2 Coins";
-                    topRankReward = "🪙 10 Coins (Rank 2-10)";
-                    winnerReward = "🪙 100 Coins";
-                } else if (currentMode === "Duo") {
-                    fee = 15;
-                    perKillReward = "🪙 5 Coins";
-                    topRankReward = "🪙 20 Coins (Top 5 Teams)";
-                    winnerReward = "🪙 200 Coins";
-                } else if (currentMode === "Squad") {
-                    maxSlots = 48;
-                    fee = 20; 
-                    perKillReward = "🪙 5 Coins";
-                    topRankReward = "🪙 20 Coins (Top 10 Teams)";
-                    winnerReward = "🪙 400 Coins";
-                }
-            } else {
-                // BGMI MATRIX WITH 20% MARGIN & 100 SLOTS FOR ALL MODES
-                if (currentMode === "Solo") {
-                    maxSlots = 100; // 👈 Updated to 100
-                    fee = 15; 
-                    perKillReward = "🪙 10 Coins";
-                    topRankReward = "🪙 100 Coins (Rank 2-5)";
-                    winnerReward = "🪙 500 Coins";
-                } else if (currentMode === "Duo") {
-                    maxSlots = 100; // 👈 Updated to 100
-                    fee = 20; 
-                    perKillReward = "🪙 10 Coins";
-                    topRankReward = "🪙 200 Coins (Top 3 Teams)";
-                    winnerReward = "🪙 800 Coins";
-                } else if (currentMode === "Squad") {
-                    maxSlots = 100; // 👈 Updated to 100
-                    fee = 25; 
-                    perKillReward = "🪙 10 Coins";
-                    topRankReward = "🪙 300 Coins (Top 3 Teams)";
-                    winnerReward = "🪙 1200 Coins";
-                }
+            if(gameName === "BGMI") {
+                maxSlots = 100; // Force 100 slots preference for BGMI
+            }
+
+            // Inject Custom Admin Live Configuration if available
+            if (activeConfig) {
+                fee = activeConfig.fee;
+                perKillReward = activeConfig.rewards.perKill;
+                topRankReward = activeConfig.rewards.top10;
+                winnerReward = activeConfig.rewards.winner;
             }
             
             tournaments.push({
