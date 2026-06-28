@@ -1,4 +1,57 @@
 // ==========================================================================
+// 🔒 SK ESPORTS CENTRAL SECURITY GATEWAY
+// ==========================================================================
+
+// Pehle hi poore body ko chhupa do taaki password ke bina UI na dikhe
+document.body.style.display = "none";
+
+window.addEventListener("DOMContentLoaded", async () => {
+    // Tum apna secret password yahan badal sakte ho (Abhi 'Gaurav@SK7' rakha hai)
+    const SECRET_ADMIN_PASSWORD = "Gaurav@SK7"; 
+
+    const { value: password } = await Swal.fire({
+        title: '🔒 Admin Authentication',
+        input: 'password',
+        inputLabel: 'Enter Secret Admin Command Password',
+        inputPlaceholder: 'Enter password...',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        confirmButtonColor: '#ff4655',
+        background: '#141a24',
+        color: '#fff',
+        inputAttributes: {
+            autocapitalize: 'off',
+            autocorrect: 'off'
+        }
+    });
+
+    if (password === SECRET_ADMIN_PASSWORD) {
+        // Agar password sahi hai toh UI show karo
+        document.body.style.display = "block";
+        Swal.fire({
+            icon: 'success',
+            title: 'Access Granted',
+            text: 'Welcome back, Gaurav!',
+            timer: 1500,
+            showConfirmButton: false,
+            background: '#141a24',
+            color: '#fff'
+        });
+    } else {
+        // Agar galat password dala toh access block aur redirect
+        await Swal.fire({
+            icon: 'error',
+            title: 'Access Denied',
+            text: 'Incorrect Password! Redirecting to main site...',
+            confirmButtonColor: '#ff4655',
+            background: '#141a24',
+            color: '#fff'
+        });
+        window.location.href = "index.html"; // Wapas bhej dega main website par
+    }
+});
+
+// ==========================================================================
 // 🛠️ SK ESPORTS OFFICIAL CLIENT ENGINE - ADMIN MODULE
 // ==========================================================================
 
