@@ -24,14 +24,18 @@ let currentUserData = null;
 let isSignUpMode = false;
 let currentActiveTab = "upcoming";
 
-// --- DYNAMIC DATA-DRIVEN SCHEDULE ENGINE ---
+// Real-time collections listeners for instant updates
 let databaseGameConfigs = {};
+let databaseTournaments = {};
 
-// Sync admin global rate configs in real-time
 db.collection('gameConfigs').onSnapshot((snapshot) => {
-    snapshot.forEach(doc => {
-        databaseGameConfigs[doc.id] = doc.data();
-    });
+    snapshot.forEach(doc => { databaseGameConfigs[doc.id] = doc.data(); });
+    if(currentSelection.game) renderMatchesList();
+});
+
+// ⚡ Dynamic single match snapshot connection listener
+db.collection('tournaments').onSnapshot((snapshot) => {
+    snapshot.forEach(doc => { databaseTournaments[doc.id] = doc.data(); });
     if(currentSelection.game) renderMatchesList();
 });
 
@@ -50,30 +54,35 @@ function getDynamicTournaments() {
             let ampm = hour >= 12 ? "PM" : "AM";
             let matchTime = `${displayHour}:${mins} ${ampm}`;
             
-            let modeIndex = currentId % 3;
-            let currentMode = modes[modeIndex];
+            let currentMode = modes[currentId % 3];
+            const uniqueMatchKey = `${gameName.replace(/\s+/g, '')}_match_${today}_${hour}_${mins}`;
             
-            // Build key format matching admin dispatch
+            // 1. Set Global Default Rates First
             const configKey = `${gameName.replace(/\s+/g, '')}_${currentMode}_Config`;
-            const activeConfig = databaseGameConfigs[configKey];
+            const globalConfig = databaseGameConfigs[configKey];
 
-            // Default fallback matrix if admin config doesn't exist yet
             let fee = currentMode === "Solo" ? 10 : (currentMode === "Duo" ? 15 : 20);
             let perKillReward = "🪙 5 Coins";
             let topRankReward = "🪙 20 Coins";
             let winnerReward = "🪙 100 Coins";
-            let maxSlots = currentMode === "Solo" ? 50 : (currentMode === "Duo" ? 50 : 48);
+            let maxSlots = gameName === "BGMI" ? 100 : (currentMode === "Solo" ? 50 : (currentMode === "Duo" ? 50 : 48));
 
-            if(gameName === "BGMI") {
-                maxSlots = 100; // Force 100 slots preference for BGMI
+            if (globalConfig) {
+                fee = globalConfig.fee;
+                perKillReward = globalConfig.rewards.perKill;
+                topRankReward = globalConfig.rewards.top10;
+                winnerReward = globalConfig.rewards.winner;
             }
 
-            // Inject Custom Admin Live Configuration if available
-            if (activeConfig) {
-                fee = activeConfig.fee;
-                perKillReward = activeConfig.rewards.perKill;
-                topRankReward = activeConfig.rewards.top10;
-                winnerReward = activeConfig.rewards.winner;
+            // 2. Overwrite with Single Specific Match Configuration (e.g., Free Matches)
+            const specificMatch = databaseTournaments[uniqueMatchKey];
+            if (specificMatch && specificMatch.fee !== undefined) {
+                fee = specificMatch.fee;
+                if(specificMatch.rewards) {
+                    if(specificMatch.rewards.perKill) perKillReward = specificMatch.rewards.perKill;
+                    if(specificMatch.rewards.top10) topRankReward = specificMatch.rewards.top10;
+                    if(specificMatch.rewards.winner) winnerReward = specificMatch.rewards.winner;
+                }
             }
             
             tournaments.push({
@@ -83,11 +92,7 @@ function getDynamicTournaments() {
                 minNum: parseInt(mins),
                 mode: currentMode,
                 fee: fee,
-                rewards: {
-                    perKill: perKillReward,
-                    top10: topRankReward,
-                    winner: winnerReward
-                },
+                rewards: { perKill: perKillReward, top10: topRankReward, winner: winnerReward },
                 maxSlots: maxSlots
             });
             currentId++;
@@ -96,7 +101,7 @@ function getDynamicTournaments() {
     return tournaments;
 }
 
-// --- GLOBAL AUTH ENGINE STATE REGISTRY ---
+// --- GLOBAL AUTH ENGINE STATE ---
 auth.onAuthStateChanged((user) => {
     const loginBtn = document.getElementById('loginNavBtn');
     const profileHeader = document.getElementById('userProfileHeader');
@@ -106,32 +111,19 @@ auth.onAuthStateChanged((user) => {
         db.collection('users').doc(user.uid).onSnapshot((doc) => {
             if (doc.exists) {
                 currentUserData = doc.data();
-                const coinEl = document.getElementById('user-coins');
-                if(coinEl) coinEl.innerText = currentUserData.coins || 0;
-                const modalCoin = document.getElementById('modal-user-coins');
-                if(modalCoin) modalCoin.innerText = currentUserData.coins || 0;
+                if(document.getElementById('user-coins')) document.getElementById('user-coins').innerText = currentUserData.coins || 0;
+                if(document.getElementById('modal-user-coins')) document.getElementById('modal-user-coins').innerText = currentUserData.coins || 0;
                 
                 const historyTableBody = document.getElementById('wallet-history-rows');
                 if (historyTableBody) {
                     if (!currentUserData.history || currentUserData.history.length === 0) {
-                        historyTableBody.innerHTML = `<tr><td colspan="2" style="padding: 10px; color: #aaa; text-align: center;">No transaction history found.</td></tr>`;
+                        historyTableBody.innerHTML = `<tr><td colspan="2" style="padding:10px; color:#aaa; text-align:center;">No history.</td></tr>`;
                     } else {
                         let rowsHtml = "";
-                        let reversedHistory = [...currentUserData.history].reverse();
-                        reversedHistory.forEach(tx => {
+                        [...currentUserData.history].reverse().forEach(tx => {
                             let typeColor = tx.type === "Deposit" || tx.type === "Won" ? "#2ecc71" : "#ff4655";
                             let prefix = tx.type === "Deposit" || tx.type === "Won" ? "+" : "-";
-                            rowsHtml += `
-                                <tr style="border-bottom: 1px solid #1c232d;">
-                                    <td style="padding: 8px 4px;">
-                                        <div style="font-weight: bold; color: #fff;">${tx.title || 'Match Entry'}</div>
-                                        <div style="font-size: 10px; color: #666;">${tx.date || ''}</div>
-                                    </td>
-                                    <td style="padding: 8px 4px; text-align: right; font-weight: bold; color: ${typeColor};">
-                                        ${prefix}🪙${tx.amount}
-                                    </td>
-                                </tr>
-                            `;
+                            rowsHtml += `<tr style="border-bottom:1px solid #1c232d;"><td style="padding:8px 4px;"><div style="font-weight:bold; color:#fff;">${tx.title}</div><div style="font-size:10px; color:#666;">${tx.date}</div></td><td style="padding:8px 4px; text-align:right; font-weight:bold; color:${typeColor};">${prefix}🪙${tx.amount}</td></tr>`;
                         });
                         historyTableBody.innerHTML = rowsHtml;
                     }
@@ -150,34 +142,23 @@ function checkAuthAndSelect(gameName) {
     currentSelection.game = gameName;
     switchMatchTab('upcoming'); 
 }
-
 function showSection(sectionId) {
     document.querySelectorAll('.interface-section').forEach(s => s.classList.remove('active'));
-    const el = document.getElementById(sectionId);
-    if(el) el.classList.add('active');
+    if(document.getElementById(sectionId)) document.getElementById(sectionId).classList.add('active');
 }
-
 function switchMatchTab(tabName) {
     currentActiveTab = tabName;
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.style.background = 'none';
-        btn.style.color = '#aaa';
-    });
-    const activeBtn = document.getElementById(`tab-${tabName}`);
-    if(activeBtn) {
-        activeBtn.style.background = '#ff4655';
-        activeBtn.style.color = '#fff';
-    }
+    document.querySelectorAll('.tab-btn').forEach(btn => { btn.style.background = 'none'; btn.style.color = '#aaa'; });
+    if(document.getElementById(`tab-${tabName}`)) { document.getElementById(`tab-${tabName}`).style.background = '#ff4655'; document.getElementById(`tab-${tabName}`).style.color = '#fff'; }
     renderMatchesList();
-}
-// ==========================================================================
+        }
+                // ==========================================================================
 // 🛠️ SK ESPORTS OFFICIAL CLIENT ENGINE - PART 2 (RENDERING & LOGIC)
 // ==========================================================================
 
 function renderMatchesList() {
     const gameName = currentSelection.game;
-    const titleEl = document.getElementById('selected-game-title');
-    if(titleEl) titleEl.innerText = gameName;
+    if(document.getElementById('selected-game-title')) document.getElementById('selected-game-title').innerText = gameName;
     const container = document.getElementById('tournaments-container');
     if(!container) return;
     container.innerHTML = "";
@@ -191,20 +172,18 @@ function renderMatchesList() {
 
     activeMatches.forEach(t => {
         let status = "upcoming"; 
-        if (t.hour24 < currentHour || (t.hour24 === currentHour && t.minNum + 30 <= currentMin)) {
-            status = "past";
-        } else if (t.hour24 === currentHour && currentMin >= t.minNum && currentMin < t.minNum + 30) {
-            status = "live";
-        }
+        if (t.hour24 < currentHour || (t.hour24 === currentHour && t.minNum + 30 <= currentMin)) status = "past";
+        else if (t.hour24 === currentHour && currentMin >= t.minNum && currentMin < t.minNum + 30) status = "live";
 
-        if (currentActiveTab === "my_joined") {
-            // Managed inside dynamic listener mapping
-        } else if (currentActiveTab !== status) {
-            return; 
-        }
+        if (currentActiveTab === "my_joined") {} 
+        else if (currentActiveTab !== status) return; 
 
         const uniqueMatchKey = `${gameName.replace(/\s+/g, '')}_${t.id}`;
-        
+        let playerList = databaseTournaments[uniqueMatchKey]?.players || [];
+        let isUserJoined = auth.currentUser ? playerList.some(p => p.uid === auth.currentUser.uid || p.uid.startsWith(`${auth.currentUser.uid}_mate_`)) : false;
+
+        if (currentActiveTab === "my_joined" && !isUserJoined) return;
+
         const card = document.createElement('div');
         card.className = "t-card";
         card.id = `card_${uniqueMatchKey}`;
@@ -213,204 +192,100 @@ function renderMatchesList() {
                 <h3>⏰ Time: ${t.time} (${t.mode})</h3>
                 <p style="font-size:12px; color:#aaa; margin:4px 0;">🗺️ Map: ${mapName} | Tap for Rewards List</p>
                 <div class="t-details">
-                    <span>🪙 Entry: ${t.fee} Coins</span>
-                    <span id="count_${uniqueMatchKey}" style="color:#66fcf1;">👥 Joined: Loading...</span>
+                    <span>🪙 Entry: ${t.fee === 0 ? "FREE" : t.fee + " Coins"}</span>
+                    <span style="color:#66fcf1;">👥 Joined: ${playerList.length}/${t.maxSlots}</span>
                 </div>
                 
-                <div id="room-box-${uniqueMatchKey}" class="hidden" style="background:#1e2736; padding:12px; border-radius:6px; margin-top:10px; border:1px dashed #66fcf1; color:#fff; text-align:left;">
-                    <h4 style="margin:0 0 5px 0; color:#66fcf1; font-size:14px;">🔑 Official Room Details:</h4>
-                    <p style="margin:3px 0; font-size:13px;">Room ID: <span id="roomIdVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
-                    <p style="margin:3px 0; font-size:13px;">Password: <span id="roomPassVal-${uniqueMatchKey}" style="font-weight:bold; color:#fff;">Awaiting...</span></p>
+                <div id="room-box-${uniqueMatchKey}" class="hidden" style="background:#1e2736; padding:12px; border-radius:6px; margin-top:10px; border:1px dashed #66fcf1; color:#fff;">
+                    <h4>🔑 Official Room Details:</h4>
+                    <p>Room ID: <strong>${databaseTournaments[uniqueMatchKey]?.roomId || "Awaiting..."}</strong></p>
+                    <p>Password: <strong>${databaseTournaments[uniqueMatchKey]?.roomPass || "Awaiting..."}</strong></p>
                 </div>
 
-                <div id="result-box-${uniqueMatchKey}" class="hidden" style="background:#111a24; padding:12px; border-radius:6px; margin-top:10px; border:1px solid #2ecc71; color:#fff; text-align:left;">
-                    <h4 style="margin:0 0 8px 0; color:#2ecc71; font-size:14px;">🏆 Full Match Leaderboard / Results:</h4>
-                    <div id="secure-leaderboard-view-${uniqueMatchKey}">
-                        <div style="overflow-x:auto;">
-                            <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
-                                <thead>
-                                    <tr style="border-bottom:2px solid #2ecc71; color:#aaa;">
-                                        <th style="padding:4px;">Player (IGN)</th>
-                                        <th style="padding:4px;">Kills</th>
-                                        <th style="padding:4px;">Prize</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="leaderboard-rows-${uniqueMatchKey}">
-                                    <tr><td colspan="3" style="padding:6px; color:#aaa;">Result processing...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
+                <div id="result-box-${uniqueMatchKey}" class="hidden" style="background:#111a24; padding:12px; border-radius:6px; margin-top:10px; border:1px solid #2ecc71;">
+                    <h4 style="color:#2ecc71;">🏆 Match Results Leaderboard:</h4>
+                    <div id="table_${uniqueMatchKey}">
+                        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                            <thead><tr style="color:#aaa;"><th style="padding:4px;">IGN</th><th style="padding:4px;">Kills</th><th style="padding:4px;">Prize</th></tr></thead>
+                            <tbody id="rows_${uniqueMatchKey}"></tbody>
+                        </table>
                     </div>
-                    <div id="secure-leaderboard-lock-${uniqueMatchKey}" class="hidden" style="padding:4px 0; color:#ff4655; font-size:13px; font-weight:bold;">
-                        🔒 Results Locked! Only players who participated in this match can view the scorecard.
-                    </div>
+                    <div id="lock_${uniqueMatchKey}" class="hidden" style="color:#ff4655; font-weight:bold;">🔒 Scorecard locked for non-participants.</div>
                 </div>
 
                 <div id="details-${t.id}" class="hidden" style="background:#0d1117; padding:10px; border-radius:6px; margin-top:10px; border-left:3px solid #ff4655;">
-                    <p style="margin:4px 0; font-size:13px;">🎯 Winner/Booyah: <strong>${t.rewards.winner}</strong></p>
-                    <p style="margin:4px 0; font-size:13px;">🎖️ Top 10 Finisher: <strong>${t.rewards.top10}</strong></p>
-                    <p style="margin:4px 0; font-size:13px;">💀 Per Kill Reward: <strong>${t.rewards.perKill}</strong></p>
+                    <p>🎯 Winner/Booyah: <strong>${t.rewards.winner}</strong></p>
+                    <p>🎖️ Top Rank Reward: <strong>${t.rewards.top10}</strong></p>
+                    <p>💀 Per Kill Reward: <strong>${t.rewards.perKill}</strong></p>
                 </div>
             </div>
-            <div id="action_${uniqueMatchKey}"><button class="join-btn" style="background:#444;" disabled>Processing...</button></div>
+            <div id="action_${uniqueMatchKey}"></div>
         `;
         container.appendChild(card);
 
-        db.collection('tournaments').doc(uniqueMatchKey).onSnapshot((doc) => {
-            let joinedCount = 0;
-            let isUserJoined = false;
-            let databaseRoomId = "Awaiting Admin...";
-            let databaseRoomPass = "Awaiting Admin...";
-            let playerList = [];
-            
-            if(doc.exists) {
-                const docData = doc.data();
-                if(docData.players) {
-                    playerList = docData.players;
-                    joinedCount = playerList.length;
-                    if(auth.currentUser) {
-                        isUserJoined = playerList.some(p => p.uid === auth.currentUser.uid || p.uid.startsWith(`${auth.currentUser.uid}_mate_`));
-                    }
-                }
-                if(docData.roomId) databaseRoomId = docData.roomId;
-                if(docData.roomPass) databaseRoomPass = docData.roomPass;
+        // Render dynamic inner elements statuses
+        const roomBox = document.getElementById(`room-box-${uniqueMatchKey}`);
+        const totalMinutes = (t.hour24 * 60) + t.minNum;
+        const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+        if (roomBox && status === "upcoming" && isUserJoined && (totalMinutes - currentMinutes <= 15)) roomBox.classList.remove('hidden');
+
+        if (status === "past") {
+            document.getElementById(`result-box-${uniqueMatchKey}`).classList.remove('hidden');
+            if (!isUserJoined) document.getElementById(`lock_${uniqueMatchKey}`).classList.remove('hidden');
+            else {
+                let tbody = document.getElementById(`rows_${uniqueMatchKey}`);
+                let sorted = [...playerList].sort((a,b) => b.kills - a.kills);
+                tbody.innerHTML = sorted.length ? sorted.map(p => `<tr><td style="color:#66fcf1; padding:4px;">${p.gameName}</td><td>💀 ${p.kills}</td><td style="color:#2ecc71;">${p.prize}</td></tr>`).join('') : `<tr><td colspan="3">Processing results...</td></tr>`;
             }
+        }
 
-            if (currentActiveTab === "my_joined" && !isUserJoined) {
-                card.remove();
-                return;
-            }
-
-            const counterEl = document.getElementById(`count_${uniqueMatchKey}`);
-            if(counterEl) counterEl.innerText = `👥 Joined: ${joinedCount}/${t.maxSlots}`;
-
-            const matchTotalMinutes = (t.hour24 * 60) + t.minNum;
-            const currentTotalMinutes = (now.getHours() * 60) + now.getMinutes();
-            const timeDifference = matchTotalMinutes - currentTotalMinutes;
-
-            const roomContainer = document.getElementById(`room-box-${uniqueMatchKey}`);
-            if(roomContainer) {
-                if (status === "upcoming" && isUserJoined && timeDifference <= 15) {
-                    roomContainer.classList.remove('hidden');
-                    document.getElementById(`roomIdVal-${uniqueMatchKey}`).innerText = databaseRoomId;
-                    document.getElementById(`roomPassVal-${uniqueMatchKey}`).innerText = databaseRoomPass;
-                } else {
-                    roomContainer.classList.add('hidden');
-                }
-            }
-
-            const resultContainer = document.getElementById(`result-box-${uniqueMatchKey}`);
-            const tbodyEl = document.getElementById(`leaderboard-rows-${uniqueMatchKey}`);
-            const tableWrapper = document.getElementById(`secure-leaderboard-view-${uniqueMatchKey}`);
-            const lockWrapper = document.getElementById(`secure-leaderboard-lock-${uniqueMatchKey}`);
-            
-            if(resultContainer && tbodyEl) {
-                if (status === "past") {
-                    resultContainer.classList.remove('hidden');
-                    if (!isUserJoined) {
-                        if(tableWrapper) tableWrapper.classList.add('hidden');
-                        if(lockWrapper) lockWrapper.classList.remove('hidden');
-                    } else {
-                        if(tableWrapper) tableWrapper.classList.remove('hidden');
-                        if(lockWrapper) lockWrapper.classList.add('hidden');
-                        
-                        if(playerList.length === 0) {
-                            tbodyEl.innerHTML = `<tr><td colspan="3" style="padding:6px; color:#aaa;">No one joined this match.</td></tr>`;
-                        } else {
-                            let sortedPlayers = [...playerList].sort((a, b) => parseInt(b.kills || 0) - parseInt(a.kills || 0));
-                            let rowsHtml = "";
-                            sortedPlayers.forEach(p => {
-                                rowsHtml += `
-                                    <tr style="border-bottom: 1px solid #222;">
-                                        <td style="padding:6px 4px; font-weight:bold; color:#66fcf1;">${p.gameName || 'Unknown'}</td>
-                                        <td style="padding:6px 4px; color:#fff;">💀 ${p.kills || 0}</td>
-                                        <td style="padding:6px 4px; color:#2ecc71; font-weight:bold;">${p.prize || '0 Coins'}</td>
-                                    </tr>
-                                `;
-                            });
-                            tbodyEl.innerHTML = rowsHtml;
-                        }
-                    }
-                } else {
-                    resultContainer.classList.add('hidden');
-                }
-            }
-
-            let actionBtnHtml = "";
-            if (status === "past") {
-                actionBtnHtml = `<button class="join-btn" style="background:#333; color:#777;" disabled>Match Ended</button>`;
-            } else if (status === "live") {
-                actionBtnHtml = `<button class="join-btn" style="background:#e74c3c;" disabled>🔴 Live Match</button>`;
-            } else if (isUserJoined) {
-                if (!uniqueMatchKey.includes("Solo")) {
-                    actionBtnHtml = `
-                        <div style="display:flex; gap:6px; flex-direction:column;">
-                            <button class="join-btn" style="background:#2ecc71; margin-bottom:2px;" disabled>Joined ✓</button>
-                            <button class="join-btn" style="background:#66fcf1; color:#000; font-weight:bold;" onclick="openTeammateModal('${uniqueMatchKey}', ${t.fee}, '${t.time} (${t.mode})')">➕ Add Teammate (🪙${t.fee})</button>
-                        </div>
-                    `;
-                } else {
-                    actionBtnHtml = `<button class="join-btn" style="background:#2ecc71;" disabled>Joined ✓</button>`;
-                }
-            } else {
-                actionBtnHtml = `<button class="join-btn" onclick="openJoinModal('${uniqueMatchKey}', ${t.fee}, '${t.time} ${t.mode}')">Join Match</button>`;
-            }
-
-            const actionContainer = document.getElementById(`action_${uniqueMatchKey}`);
-            if(actionContainer) actionContainer.innerHTML = actionBtnHtml;
-        });
+        let actionBtnHtml = "";
+        if (status === "past") actionBtnHtml = `<button class="join-btn" style="background:#333; color:#777;" disabled>Match Ended</button>`;
+        else if (status === "live") actionBtnHtml = `<button class="join-btn" style="background:#e74c3c;" disabled>🔴 Live Match</button>`;
+        else if (isUserJoined) {
+            actionBtnHtml = !uniqueMatchKey.includes("Solo") ? `<div style="display:flex; flex-direction:column; gap:4px;"><button class="join-btn" style="background:#2ecc71;" disabled>Joined ✓</button><button class="join-btn" style="background:#66fcf1; color:#000;" onclick="openTeammateModal('${uniqueMatchKey}', ${t.fee}, '${t.time}')">➕ Add Mate</button></div>` : `<button class="join-btn" style="background:#2ecc71;" disabled>Joined ✓</button>`;
+        } else {
+            actionBtnHtml = `<button class="join-btn" onclick="openJoinModal('${uniqueMatchKey}', ${t.fee}, '${t.time} ${t.mode}')">Join Match</button>`;
+        }
+        document.getElementById(`action_${uniqueMatchKey}`).innerHTML = actionBtnHtml;
     });
-
     showSection('tournament-view');
 }
 
-function toggleDetailsBox(id) {
-    const el = document.getElementById(`details-${id}`);
-    if(el) el.classList.toggle('hidden');
-}
-
-function openWalletModal() { if(auth.currentUser) { const m = document.getElementById('walletModal'); if(m) m.classList.remove('hidden'); } }
-function closeWalletModal() { const m = document.getElementById('walletModal'); if(m) m.classList.add('hidden'); }
-function openRulesModal() { const m = document.getElementById('rulesModal'); if(m) m.classList.remove('hidden'); }
-function closeRulesModal() { const m = document.getElementById('rulesModal'); if(m) m.classList.add('hidden'); }
+function toggleDetailsBox(id) { const el = document.getElementById(`details-${id}`); if(el) el.classList.toggle('hidden'); }
+function openWalletModal() { if(auth.currentUser) document.getElementById('walletModal')?.classList.remove('hidden'); }
+function closeWalletModal() { document.getElementById('walletModal')?.classList.add('hidden'); }
+function openRulesModal() { document.getElementById('rulesModal')?.classList.remove('hidden'); }
+function closeRulesModal() { document.getElementById('rulesModal')?.classList.add('hidden'); }
 function closeJoinModal() { document.getElementById('joinModal').classList.add('hidden'); }
 function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
 function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
-function closeTeammateModal() { const m = document.getElementById('addTeammateModal'); if(m) m.classList.add('hidden'); }
+if(document.getElementById('addTeammateModal')) { function closeTeammateModal() { document.getElementById('addTeammateModal').classList.add('hidden'); } }
 
 function openJoinModal(matchKey, fee, matchInfo) {
     if (!auth.currentUser || !currentUserData) { openAuthModal(); return; }
     if (currentUserData.coins < fee) { showSection('wallet-topup'); return; }
-    currentSelection.currentMatchKey = matchKey;
-    currentSelection.fee = fee;
-    currentSelection.currentMatchInfo = matchInfo;
-    document.getElementById('playerGameName').value = "";
-    document.getElementById('playerGameUID').value = "";
-    const m = document.getElementById('joinModal');
-    if(m) m.classList.remove('hidden');
+    currentSelection.currentMatchKey = matchKey; currentSelection.fee = fee; currentSelection.currentMatchInfo = matchInfo;
+    document.getElementById('playerGameName').value = ""; document.getElementById('playerGameUID').value = "";
+    document.getElementById('joinModal').classList.remove('hidden');
 }
 
 function openTeammateModal(matchKey, fee, matchInfo) {
     if (!auth.currentUser || !currentUserData) { openAuthModal(); return; }
     if (currentUserData.coins < fee) { showSection('wallet-topup'); return; }
-    currentSelection.currentMatchKey = matchKey;
-    currentSelection.fee = fee;
-    currentSelection.currentMatchInfo = matchInfo;
-    document.getElementById('mateGameName').value = "";
-    document.getElementById('mateGameUID').value = "";
-    const m = document.getElementById('addTeammateModal');
-    if(m) m.classList.remove('hidden');
+    currentSelection.currentMatchKey = matchKey; currentSelection.fee = fee; currentSelection.currentMatchInfo = matchInfo;
+    document.getElementById('mateGameName').value = ""; document.getElementById('mateGameUID').value = "";
+    document.getElementById('addTeammateModal').classList.remove('hidden');
 }
 
 document.getElementById('joinForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const gameNameInput = document.getElementById('playerGameName').value.trim();
-    const gameUidInput = document.getElementById('playerGameUID').value.trim();
+    const ign = document.getElementById('playerGameName').value.trim();
+    const guid = document.getElementById('playerGameUID').value.trim();
     closeJoinModal();
 
     const uniqueMatchKey = currentSelection.currentMatchKey;
     const tFee = currentSelection.fee;
-    const matchInfo = currentSelection.currentMatchInfo;
     const userUID = auth.currentUser.uid;
     const userMobile = currentUserData.mobile;
     const newBalance = currentUserData.coins - tFee;
@@ -418,118 +293,46 @@ document.getElementById('joinForm').addEventListener('submit', async (e) => {
 
     try {
         await db.collection('tournaments').doc(uniqueMatchKey).set({
-            players: firebase.firestore.FieldValue.arrayUnion({ 
-                uid: userUID, mobile: userMobile, gameName: gameNameInput, gameUID: gameUidInput, kills: 0, prize: "0 Coins"
-            })
+            players: firebase.firestore.FieldValue.arrayUnion({ uid: userUID, mobile: userMobile, gameName: ign, gameUID: guid, kills: 0, prize: "0 Coins" })
         }, { merge: true });
 
         await db.collection('users').doc(userUID).update({ 
             coins: newBalance,
-            history: firebase.firestore.FieldValue.arrayUnion({
-                title: `${currentSelection.game} (${matchInfo})`, amount: tFee, type: "Debited", date: txDate
-            })
+            history: firebase.firestore.FieldValue.arrayUnion({ title: `${currentSelection.game} (${currentSelection.currentMatchInfo})`, amount: tFee, type: "Debited", date: txDate })
         });
         
-        await fetch(FORMSPREE_URL, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Mobile: userMobile, Match: matchInfo, IGN: gameNameInput, UID: gameUidInput })
-        });
+        await fetch(FORMSPREE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Mobile: userMobile, Match: currentSelection.currentMatchInfo, IGN: ign, UID: guid }) });
         showSection('success-screen');
-    } catch (err) { alert("Error: " + err.message); }
-});
-
-document.getElementById('addTeammateForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const mateNameInput = document.getElementById('mateGameName').value.trim();
-    const mateUidInput = document.getElementById('mateGameUID').value.trim();
-    closeTeammateModal();
-
-    const uniqueMatchKey = currentSelection.currentMatchKey;
-    const tFee = currentSelection.fee;
-    const matchInfo = currentSelection.currentMatchInfo;
-    const leaderUID = auth.currentUser.uid;
-    const leaderMobile = currentUserData.mobile;
-    const newLeaderBalance = currentUserData.coins - tFee;
-    const txDate = new Date().toLocaleDateString('en-IN', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
-
-    try {
-        await db.collection('tournaments').doc(uniqueMatchKey).set({
-            players: firebase.firestore.FieldValue.arrayUnion({ 
-                uid: `${leaderUID}_mate_${Date.now()}`, mobile: leaderMobile, gameName: mateNameInput, gameUID: mateUidInput, kills: 0, prize: "0 Coins"
-            })
-        }, { merge: true });
-
-        await db.collection('users').doc(leaderUID).update({ 
-            coins: newLeaderBalance,
-            history: firebase.firestore.FieldValue.arrayUnion({
-                title: `Teammate: ${mateNameInput} (${matchInfo})`, amount: tFee, type: "Debited", date: txDate
-            })
-        });
-        
-        await fetch(FORMSPREE_URL, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Mobile: leaderMobile, Match: `${matchInfo} [Teammate]`, IGN: mateNameInput, UID: mateUidInput })
-        });
-        showSection('success-screen');
-    } catch (err) { alert("Error: " + err.message); }
+    } catch (err) { alert(err.message); }
 });
 
 document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const inputVal = document.getElementById('authIdentifier').value.trim();
+    const idVal = document.getElementById('authIdentifier').value.trim();
     const pass = document.getElementById('authPassword').value;
-    const dynamicEmail = inputVal.includes('@') ? inputVal : `${inputVal}@skesports.com`;
+    const dynamicEmail = idVal.includes('@') ? idVal : `${idVal}@skesports.com`;
 
-    Swal.fire({
-        title: 'Processing...',
-        text: 'Please wait a moment',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); },
-        background: '#141a24',
-        color: '#fff'
-    });
+    Swal.fire({ title: 'Processing...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }, background: '#141a24', color: '#fff' });
 
     try {
         if (isSignUpMode) {
             const cred = await auth.createUserWithEmailAndPassword(dynamicEmail, pass);
-            await db.collection('users').doc(cred.user.uid).set({ mobile: inputVal, coins: 0, history: [] });
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Welcome to SK eSports! 🎉',
-                html: '<p style="color: #66fcf1; font-weight: bold;">Registered Successfully!</p><p>Starting Balance: 🪙 0 Coins</p>',
-                background: '#141a24',
-                color: '#fff',
-                confirmButtonColor: '#ff4655'
-            });
+            await db.collection('users').doc(cred.user.uid).set({ mobile: idVal, coins: 0, history: [] });
+            Swal.fire({ icon: 'success', title: 'Welcome! 🎉', background: '#141a24', color: '#fff' });
         } else {
             await auth.signInWithEmailAndPassword(dynamicEmail, pass);
             Swal.close(); 
         }
         closeAuthModal();
     } catch (err) {
-        let friendlyMessage = err.message;
-        if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
-            friendlyMessage = "Incorrect Mobile/Email or Password. Please try again or create a new account!";
-        }
-
-        Swal.fire({
-            icon: 'error',
-            title: 'Authentication Failed',
-            text: friendlyMessage,
-            background: '#141a24',
-            color: '#fff',
-            confirmButtonColor: '#ff4655'
-        });
+        Swal.fire({ icon: 'error', title: 'Failed', text: err.message, background: '#141a24', color: '#fff' });
     }
 });
 
 function toggleAuthMode() {
     isSignUpMode = !isSignUpMode;
     document.getElementById('auth-title').innerText = isSignUpMode ? "Signup to SK eSports" : "Login to SK eSports";
-    document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register Account" : "Login";
+    document.getElementById('authSubmitBtn').innerText = isSignUpMode ? "Register" : "Login";
 }
 function logoutUser() { auth.signOut().then(() => location.reload()); }
-                    
+
